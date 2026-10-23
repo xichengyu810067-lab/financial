@@ -8,7 +8,7 @@
 | 里程碑 | 內容 | 狀態 |
 |---|---|---|
 | 0 | 專案骨架、資料庫結構、CI、Vercel 上線 | ✅ |
-| 1 | Email 登入、帳本與科目管理、期初餘額 | 待討論 |
+| 1 | Email 登入、引導頁、帳戶與類別管理（圖示、顏色、排序、子類別）、期初餘額 | ✅（寄信需先完成 [docs/setup-email.md](docs/setup-email.md)） |
 | 2 | 收入／支出／轉帳記帳、分錄預覽、交易清單 | 待討論 |
 | 3 | 三大財報、期間切換、下鑽、即時連動 | 待討論 |
 | 4 | 儀表板圖表 | 待討論 |
@@ -58,6 +58,11 @@ npm run lint    # ESLint
 npm test        # Vitest
 npm run build   # 正式建置
 ```
+
+### 本機測試登入
+
+信箱驗證開啟時，本機測試可用 SQL 在 Supabase 建立一個已確認信箱的帳號
+（參考 `docs/milestone-1.md` 實作備註），帳密放在 `.env.local` 的 `DEV_TEST_EMAIL` / `DEV_TEST_PASSWORD`，不要提交到版控。
 
 ### 環境變數
 

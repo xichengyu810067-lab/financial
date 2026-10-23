@@ -1,5 +1,14 @@
-import { PlaceholderPage } from "@/components/placeholder-page";
+import type { Metadata } from "next";
+import { ClientOnly } from "@/components/client-only";
+import { Skeleton } from "@/components/ui/skeleton";
+import { AccountsView } from "./accounts-view";
 
-export default function Page() {
-  return <PlaceholderPage title="帳戶" milestone={1} description="資產與負債帳戶管理、期初餘額設定。" />;
+export const metadata: Metadata = { title: "帳戶" };
+
+export default function AccountsPage() {
+  return (
+    <ClientOnly fallback={<Skeleton className="h-96 w-full" />}>
+      <AccountsView />
+    </ClientOnly>
+  );
 }

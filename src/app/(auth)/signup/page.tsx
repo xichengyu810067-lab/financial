@@ -1,5 +1,8 @@
-import { PlaceholderPage } from "@/components/placeholder-page";
+import type { Metadata } from "next";
+import { SignupForm } from "./signup-form";
 
-export default function Page() {
-  return <PlaceholderPage title="註冊" milestone={1} description="建立帳號後自動產生預設帳本與科目表。" />;
+export const metadata: Metadata = { title: "註冊" };
+
+export default function SignupPage() {
+  return <SignupForm />;
 }
