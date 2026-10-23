@@ -12,6 +12,8 @@ export type EntrySheetState =
   | { open: true; seq: number; mode: EntrySheetMode; entry?: Entry };
 
 interface EntrySheetApi {
+  /** 面板目前是否開著（其他面板可用來避免被「點到外面」關掉） */
+  isOpen: boolean;
   openNew: () => void;
   openEdit: (entry: Entry) => void;
   openCopy: (entry: Entry) => void;
@@ -27,7 +29,7 @@ const EntrySheetContext = createContext<EntrySheetApi | null>(null);
 export function EntrySheetProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<EntrySheetState>({ open: false, seq: 0 });
 
-  const api = useMemo<EntrySheetApi>(
+  const actions = useMemo<Omit<EntrySheetApi, "isOpen">>(
     () => ({
       openNew: () => setState((s) => ({ open: true, seq: s.seq + 1, mode: "new" })),
       openEdit: (entry) => setState((s) => ({ open: true, seq: s.seq + 1, mode: "edit", entry })),
@@ -36,6 +38,7 @@ export function EntrySheetProvider({ children }: { children: ReactNode }) {
     }),
     [],
   );
+  const api = useMemo<EntrySheetApi>(() => ({ ...actions, isOpen: state.open }), [actions, state.open]);
 
   return (
     <EntrySheetContext.Provider value={api}>

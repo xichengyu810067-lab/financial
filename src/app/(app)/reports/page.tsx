@@ -1,5 +1,14 @@
-import { PlaceholderPage } from "@/components/placeholder-page";
+import type { Metadata } from "next";
+import { ClientOnly } from "@/components/client-only";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ReportsView } from "./reports-view";
 
-export default function Page() {
-  return <PlaceholderPage title="報表" milestone={3} description="損益表、資產負債表、現金流量表，可切換期間並下鑽到交易。" />;
+export const metadata: Metadata = { title: "報表" };
+
+export default function ReportsPage() {
+  return (
+    <ClientOnly fallback={<Skeleton className="h-96 w-full" />}>
+      <ReportsView />
+    </ClientOnly>
+  );
 }

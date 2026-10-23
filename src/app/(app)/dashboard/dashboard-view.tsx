@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeftRight, Tags, Wallet } from "lucide-react";
+import { ArrowLeftRight, FileText, Tags, Wallet } from "lucide-react";
 import { cn } from "cn";
 import { AccountIcon } from "@/components/account-icon";
 import { useEntrySheet } from "@/components/entry/entry-sheet-provider";
@@ -141,9 +141,9 @@ export function DashboardView() {
           <CardHeader>
             <div className="flex items-center gap-2">
               <CardTitle>接下來</CardTitle>
-              <Badge variant="highlight">里程碑 3・4</Badge>
+              <Badge variant="highlight">里程碑 4</Badge>
             </div>
-            <CardDescription>三大報表與收支趨勢圖會陸續加到這裡。</CardDescription>
+            <CardDescription>收支趨勢與類別占比圖會在下一個里程碑加到這裡。</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-2">
             {!hasAccounts && (
@@ -152,6 +152,10 @@ export function DashboardView() {
                 先建立帳戶
               </Link>
             )}
+            <Link href="/reports" className={buttonVariants({ variant: "secondary", size: "sm" })}>
+              <FileText className="size-4" aria-hidden />
+              三大報表
+            </Link>
             <Link href="/accounts" className={buttonVariants({ variant: "secondary", size: "sm" })}>
               <Wallet className="size-4" aria-hidden />
               帳戶與期初餘額

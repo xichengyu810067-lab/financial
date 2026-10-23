@@ -16,6 +16,7 @@ export const queryKeys = {
   accounts: (ledgerId: string) => ["accounts", ledgerId] as const,
   balances: (ledgerId: string) => ["balances", ledgerId] as const,
   openings: (ledgerId: string) => ["openings", ledgerId] as const,
+  reports: (ledgerId: string) => ["reports", ledgerId] as const,
 };
 
 /** 有錯就丟出，否則回傳 data（可能為 null，例如 maybeSingle） */
@@ -36,6 +37,7 @@ export async function invalidateLedgerData(queryClient: QueryClient, ledgerId: s
     queryClient.invalidateQueries({ queryKey: queryKeys.accounts(ledgerId) }),
     queryClient.invalidateQueries({ queryKey: queryKeys.balances(ledgerId) }),
     queryClient.invalidateQueries({ queryKey: queryKeys.openings(ledgerId) }),
+    queryClient.invalidateQueries({ queryKey: queryKeys.reports(ledgerId) }),
   ]);
 }
 

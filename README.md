@@ -10,7 +10,7 @@
 | 0 | 專案骨架、資料庫結構、CI、Vercel 上線 | ✅ |
 | 1 | Email 登入、引導頁、帳戶與類別管理（圖示、顏色、排序、子類別）、期初餘額 | ✅（寄信需先完成 [docs/setup-email.md](docs/setup-email.md)） |
 | 2 | 全站「記一筆」（算式金額、分錄預覽、再記一筆）、月份交易清單（篩選、搜尋、複製、批次刪除） | ✅ |
-| 3 | 三大財報、期間切換、下鑽、即時連動 | 待討論 |
+| 3 | 三大財報（損益表、資產負債表、現金流量表）、月／季／年／自訂期間、下鑽明細、即時連動 | 實作完成，待正式站驗收 |
 | 4 | 儀表板圖表 | 待討論 |
 | 5 | 預算與儲蓄目標 | 待討論 |
 | 6 | Google 登入、匯出備份、E2E 測試、安全審查 | 待討論 |
@@ -46,7 +46,7 @@
 ### 資料表（`supabase/migrations/`）
 
 `profiles`、`ledgers`、`accounts`、`entries`、`entry_lines`、`budgets`、`goals`，
-全部啟用 RLS，只有帳本擁有者能讀寫。報表用的 SQL 函式會在里程碑 3 加入。
+全部啟用 RLS，只有帳本擁有者能讀寫。報表由 `report_income_statement`、`report_balance_sheet`、`report_cash_flow`、`monthly_summary` 四個 SQL 函式計算（security invoker，同樣受 RLS 保護）。
 
 ## 本機開發
 
