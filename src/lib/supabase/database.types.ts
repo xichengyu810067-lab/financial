@@ -376,6 +376,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          animations_enabled: boolean
           created_at: string
           display_name: string | null
           id: string
@@ -383,6 +384,7 @@ export type Database = {
           slogan: string | null
         }
         Insert: {
+          animations_enabled?: boolean
           created_at?: string
           display_name?: string | null
           id: string
@@ -390,6 +392,7 @@ export type Database = {
           slogan?: string | null
         }
         Update: {
+          animations_enabled?: boolean
           created_at?: string
           display_name?: string | null
           id?: string
