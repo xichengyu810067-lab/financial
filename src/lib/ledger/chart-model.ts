@@ -1,4 +1,4 @@
-import { aggregateStats, OVER_RATIO, type CategoryStat } from "./alerts";
+import { aggregateStats, effectiveBudget, OVER_RATIO, type CategoryStat } from "./alerts";
 import { getColor } from "./colors";
 import type { DailySummaryRow } from "./days";
 import { addDays, daysBetween, shortMonthLabel } from "./period";
@@ -139,8 +139,14 @@ export interface BaselineRow {
   color: string | null;
   memberIds: string[];
   spent: number;
+  /** 這個月實際用的尺：當月覆寫 → 類別基準線 → 三個月平均 */
   baseline: number | null;
+  /** baseline 來自基準線或覆寫（不是平均） */
   usingBudget: boolean;
+  /** 類別基準線（可能被覆寫） */
+  categoryBudget: number | null;
+  /** 當月覆寫 */
+  monthBudget: number | null;
   /** spent ÷ baseline，可超過 1；沒基準線為 null */
   ratio: number | null;
   level: BaselineLevel;
@@ -152,11 +158,12 @@ export function baselineRows(stats: CategoryStat[]): BaselineRow[] {
   return parents
     .filter((p) => !p.is_archived || p.month_to_date > 0)
     .map((p): BaselineRow => {
-      const usingBudget = p.monthly_budget !== null && p.monthly_budget > 0;
-      const baseline = usingBudget ? p.monthly_budget! : p.prev3_months > 0 && p.prev3_avg > 0 ? p.prev3_avg : null;
+      const budget = effectiveBudget(p);
+      const usingBudget = budget !== null;
+      const baseline = budget ?? (p.prev3_months > 0 && p.prev3_avg > 0 ? p.prev3_avg : null);
       const ratio = baseline ? p.month_to_date / baseline : null;
       const level: BaselineLevel =
-        ratio === null ? "none" : ratio > 1 ? "over" : usingBudget && p.prev3_months > 0 && p.prev3_avg > p.monthly_budget! * OVER_RATIO ? "habit" : "ok";
+        ratio === null ? "none" : ratio > 1 ? "over" : usingBudget && p.prev3_months > 0 && p.prev3_avg > budget! * OVER_RATIO ? "habit" : "ok";
       return {
         id: p.account_id,
         name: p.name,
@@ -166,6 +173,8 @@ export function baselineRows(stats: CategoryStat[]): BaselineRow[] {
         spent: p.month_to_date,
         baseline,
         usingBudget,
+        categoryBudget: p.monthly_budget,
+        monthBudget: p.month_budget,
         ratio,
         level,
       };

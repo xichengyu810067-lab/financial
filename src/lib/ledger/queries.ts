@@ -221,6 +221,7 @@ export function useUpdateLedger() {
       start_date?: string;
       cover_color?: string | null;
       cover_material?: string | null;
+      monthly_spending_limit?: number | null;
     }) => {
       const supabase = createClient();
       const { id, ...patch } = input;

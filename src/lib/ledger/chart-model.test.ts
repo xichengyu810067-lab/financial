@@ -20,6 +20,7 @@ const stat = (overrides: Partial<CategoryStat> & Pick<CategoryStat, "account_id"
   is_archived: false,
   sort_order: 0,
   monthly_budget: null,
+  month_budget: null,
   month_to_date: 0,
   month_count: 0,
   prev3_avg: 0,
@@ -103,7 +104,12 @@ describe("圖表資料", () => {
     ]);
     expect(rows.map((r) => `${r.name}:${r.level}`)).toEqual(["購物:over", "娛樂:habit", "飲食:ok", "其他:ok"]);
     expect(rows[0].ratio).toBeCloseTo(1.3, 5);
-    expect(rows[3]).toMatchObject({ baseline: 900, usingBudget: false });
+    expect(rows[3]).toMatchObject({ baseline: 900, usingBudget: false, categoryBudget: null, monthBudget: null });
+  });
+
+  it("基準線進度：當月覆寫優先，並保留原基準線供顯示", () => {
+    const rows = baselineRows([stat({ account_id: "shop", name: "購物", monthly_budget: 3000, month_budget: 5000, month_to_date: 3900, month_count: 1 })]);
+    expect(rows[0]).toMatchObject({ baseline: 5000, usingBudget: true, categoryBudget: 3000, monthBudget: 5000, level: "ok" });
   });
 });
 

@@ -348,6 +348,7 @@ export type Database = {
           created_at: string
           currency: string
           id: string
+          monthly_spending_limit: number | null
           name: string
           owner_id: string
           start_date: string
@@ -358,6 +359,7 @@ export type Database = {
           created_at?: string
           currency?: string
           id?: string
+          monthly_spending_limit?: number | null
           name: string
           owner_id?: string
           start_date?: string
@@ -368,6 +370,7 @@ export type Database = {
           created_at?: string
           currency?: string
           id?: string
+          monthly_spending_limit?: number | null
           name?: string
           owner_id?: string
           start_date?: string
@@ -434,6 +437,7 @@ export type Database = {
           color: string
           icon: string
           is_archived: boolean
+          month_budget: number
           month_count: number
           month_to_date: number
           monthly_budget: number

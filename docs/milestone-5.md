@@ -89,6 +89,18 @@
 - SQL rollback 測試：當月覆寫影響 `category_spending_stats`、`goal_progress` 兩種目標、RLS。
 - 瀏覽器：上述 PR 驗收項目；lint／tsc／build（以建置本身的結束碼確認）。
 
+## 實作備註
+
+### PR A 預算（2026-10-24 完成）
+
+- Migration `20261023162054_milestone_5_budgets.sql`：`ledgers.monthly_spending_limit`（≥ 0）；`category_spending_stats` 回傳欄位改變所以先 drop 再 create，多回傳 `month_budget`（`budgets` 表該月的覆寫）。
+- 基準線優先順序集中在 `alerts.ts` 的 `effectiveBudget()`（當月覆寫 → 類別基準線），`paceAlert`／`habitAlert`／`baselineRows`／子類別候選都改用它；沒有就退回前三個月平均。`feedback.ts` 新類別的假統計列補 `month_budget: null`。
+- `budgets.ts` 的 `useUpsertMonthBudget`：金額 null 就刪掉該月列，否則 upsert（`ledger_id,category_id,month` 唯一鍵）；寫入後 invalidate 報表前綴。
+- 月章節頁的「離基準線還有多遠」改成 `BudgetSection`（`budget-section.tsx`，舊的 `baseline-progress.tsx` 刪除）：上方總預算列（沒設就提示到設定頁填），每列金額可點改當月額度，有覆寫時顯示「本月」徽章（滑過看原基準線）。
+- 今天這一頁 `BudgetCard`：只在今天且有設總上限時顯示，放在淨值卡下方；每天可花 = max(0, 剩餘) ÷ 剩餘天數。
+- 設定頁「帳本」卡多「每月總支出上限」欄位，留空清除。
+- **已驗證（本機，測試帳本）**：設定頁填 25,000 後，今天這一頁出現「這個月還能花 $19,665，每天可花 $2,809，剩 7 天」，月章節頁總預算列一致；把購物當月額度改成 2,500 → 列變成「本月」徽章與 $3,900 / $2,500 已超過，今天這一頁的警示改寫「比基準線 $2,500 高 60%」；清空後回到類別基準線 $3,000。lint／tsc／test（64）／build（以建置本身結束碼確認）；SQL 情境測試：覆寫只影響該月、月中日期與負數上限被擋、他人看不到。
+
 ## 不在此里程碑
 
 目標之間自動分配存款、預算的年度檢視、Email 提醒（里程碑 6 再議）。

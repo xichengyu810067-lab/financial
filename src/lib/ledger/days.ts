@@ -59,6 +59,7 @@ export function useCategoryStats(ledgerId: string | undefined, asOf: string) {
         is_archived: r.is_archived,
         sort_order: r.sort_order,
         monthly_budget: r.monthly_budget === null ? null : Number(r.monthly_budget),
+        month_budget: r.month_budget === null ? null : Number(r.month_budget),
         month_to_date: Number(r.month_to_date),
         month_count: r.month_count,
         prev3_avg: Number(r.prev3_avg),
