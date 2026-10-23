@@ -138,6 +138,8 @@ export interface SaveAccountInput {
   parentId?: string | null;
   /** 只有資產／負債帳戶會用到；undefined 代表不更動 */
   openingAmount?: number;
+  /** 費用類別的每月基準線；undefined 代表不更動，null 代表清除 */
+  monthlyBudget?: number | null;
 }
 
 export function useSaveAccount() {
@@ -152,6 +154,7 @@ export function useSaveAccount() {
         icon: input.icon ?? null,
         color: input.color ?? null,
         parent_id: input.parentId ?? null,
+        ...(input.monthlyBudget !== undefined ? { monthly_budget: input.monthlyBudget } : {}),
       };
       let id = input.id;
       if (id) {

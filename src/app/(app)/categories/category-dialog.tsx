@@ -30,6 +30,10 @@ const schema = z.object({
   parentId: z.string(),
   icon: z.string().min(1, "請選擇圖示"),
   color: z.string().min(1, "請選擇顏色"),
+  budget: z
+    .string()
+    .trim()
+    .refine((v) => v === "" || (/^\d+(\.\d{1,2})?$/.test(v) && Number(v) <= 99_999_999), "請輸入 0 以上的金額（最多兩位小數）"),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -82,6 +86,7 @@ export function CategoryDialog({
         icon: values.icon,
         color: values.color,
         parentId: values.parentId === NONE ? null : values.parentId,
+        monthlyBudget: type === "expense" ? (values.budget === "" ? null : Number(values.budget)) : undefined,
       });
       toast.success(category ? "已更新類別" : "已新增類別");
       onOpenChange(false);
@@ -150,6 +155,17 @@ export function CategoryDialog({
             />
           </Field>
 
+          {type === "expense" && (
+            <Field
+              label="每月基準線"
+              htmlFor="category-budget"
+              hint="花過頭警示的尺：照目前速度整月會超過 30% 就提醒。留空代表不設；子類別可以各自設。"
+              error={form.formState.errors.budget?.message}
+            >
+              <Input id="category-budget" inputMode="decimal" placeholder="例如 7500" {...form.register("budget")} />
+            </Field>
+          )}
+
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={save.isPending}>
               取消
@@ -171,7 +187,8 @@ function initialValues(category: Account | undefined, type: "revenue" | "expense
       parentId: category.parent_id ?? NONE,
       icon: category.icon ?? DEFAULT_BY_TYPE[type].icon,
       color: category.color ?? DEFAULT_BY_TYPE[type].color,
+      budget: category.monthly_budget === null ? "" : String(category.monthly_budget),
     };
   }
-  return { name: "", parentId: defaultParentId ?? NONE, ...DEFAULT_BY_TYPE[type] };
+  return { name: "", parentId: defaultParentId ?? NONE, budget: "", ...DEFAULT_BY_TYPE[type] };
 }
