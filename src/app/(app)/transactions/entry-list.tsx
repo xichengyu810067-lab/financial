@@ -3,7 +3,10 @@
 import { ArrowLeftRight, Copy, EllipsisVertical, Pencil, Trash } from "lucide-react";
 import { cn } from "cn";
 import { AccountIcon } from "@/components/account-icon";
+import { Highlight } from "@/components/journal/highlight";
+import { ReceiptCard, ReceiptList } from "@/components/journal/receipt-card";
 import { Button } from "@/components/ui/button";
+import { CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenu,
@@ -50,35 +53,38 @@ interface EntryListProps {
   onDelete: (entry: Entry) => void;
 }
 
+/** 每一天一張收據：螢光筆日期、虛線分隔、兩側打孔 */
 export function EntryList({ groups, accountsById, selectMode, selected, onToggle, onEdit, onCopy, onDelete }: EntryListProps) {
   return (
-    <div className="grid gap-4">
-      {groups.map((group) => (
-        <section key={group.date} aria-label={dayLabel(group.date)}>
-          <header className="mb-1 flex items-baseline justify-between px-1 text-xs text-muted-foreground">
-            <span className="font-medium">{dayLabel(group.date)}</span>
-            <span className="tabular-nums">
-              {group.expense > 0 && <span>支出 {formatTWD(group.expense)}</span>}
-              {group.expense > 0 && group.income > 0 && <span className="mx-1">・</span>}
-              {group.income > 0 && <span>收入 {formatTWD(group.income)}</span>}
-            </span>
-          </header>
-          <div className="divide-y rounded-lg border bg-card">
-            {group.entries.map((entry) => (
-              <EntryRow
-                key={entry.id}
-                entry={entry}
-                accountsById={accountsById}
-                selectMode={selectMode}
-                selected={selected.has(entry.id)}
-                onToggle={() => onToggle(entry.id)}
-                onEdit={() => onEdit(entry)}
-                onCopy={() => onCopy(entry)}
-                onDelete={() => onDelete(entry)}
-              />
-            ))}
-          </div>
-        </section>
+    <div className="grid gap-5">
+      {groups.map((group, index) => (
+        <ReceiptCard key={group.date} size="sm" notchBottom={28} aria-label={dayLabel(group.date)}>
+          <CardContent className="grid gap-2">
+            <div className="flex items-baseline justify-between gap-3">
+              <Highlight tilt={index % 2 === 0 ? -1 : 1}>{dayLabel(group.date)}</Highlight>
+              <span className="text-xs text-muted-foreground tabular-nums">
+                {group.expense > 0 && <span>支出 {formatTWD(group.expense)}</span>}
+                {group.expense > 0 && group.income > 0 && <span className="mx-1">・</span>}
+                {group.income > 0 && <span>收入 {formatTWD(group.income)}</span>}
+              </span>
+            </div>
+            <ReceiptList>
+              {group.entries.map((entry) => (
+                <EntryRow
+                  key={entry.id}
+                  entry={entry}
+                  accountsById={accountsById}
+                  selectMode={selectMode}
+                  selected={selected.has(entry.id)}
+                  onToggle={() => onToggle(entry.id)}
+                  onEdit={() => onEdit(entry)}
+                  onCopy={() => onCopy(entry)}
+                  onDelete={() => onDelete(entry)}
+                />
+              ))}
+            </ReceiptList>
+          </CardContent>
+        </ReceiptCard>
       ))}
     </div>
   );
@@ -112,21 +118,16 @@ function EntryRow({ entry, accountsById, selectMode, selected, onToggle, onEdit,
     .join("・");
 
   const amount = Number(entry.amount);
-  const amountText = entry.kind === "expense" ? `-${formatTWD(amount)}` : entry.kind === "income" ? `+${formatTWD(amount)}` : formatTWD(amount);
-  const amountClass =
-    entry.kind === "expense"
-      ? "text-rose-600 dark:text-rose-400"
-      : entry.kind === "income"
-        ? "text-emerald-600 dark:text-emerald-400"
-        : "text-muted-foreground";
+  const amountText = entry.kind === "expense" ? `−${formatTWD(amount)}` : entry.kind === "income" ? `+${formatTWD(amount)}` : formatTWD(amount);
+  const amountClass = entry.kind === "expense" ? "text-expense" : entry.kind === "income" ? "text-income" : "text-muted-foreground";
 
   return (
-    <div className={cn("flex items-center gap-3 px-3 py-2", selected && "bg-accent/60")}>
+    <div className={cn("flex items-center gap-3 py-2.5", selected && "bg-accent/60")}>
       {selectMode && <Checkbox checked={selected} onCheckedChange={onToggle} aria-label={`選取 ${title}`} />}
       <button
         type="button"
         onClick={selectMode ? onToggle : onEdit}
-        className="flex min-w-0 flex-1 items-center gap-3 text-left"
+        className="flex min-w-0 flex-1 items-center gap-3 rounded-xl text-left"
         aria-label={`${title} ${amountText}`}
       >
         {entry.kind === "transfer" ? (
@@ -137,10 +138,10 @@ function EntryRow({ entry, accountsById, selectMode, selected, onToggle, onEdit,
           <AccountIcon icon={category?.icon} color={category?.color} />
         )}
         <span className="min-w-0 flex-1">
-          <span className="block truncate font-medium">{title}</span>
+          <span className="block truncate font-bold">{title}</span>
           {subtitle && <span className="block truncate text-xs text-muted-foreground">{subtitle}</span>}
         </span>
-        <span className={cn("shrink-0 text-sm font-medium tabular-nums", amountClass)}>{amountText}</span>
+        <span className={cn("shrink-0 text-sm font-bold tabular-nums", amountClass)}>{amountText}</span>
       </button>
       {!selectMode && (
         <DropdownMenu>

@@ -27,12 +27,12 @@ export function EntrySheet({ state, onClose }: EntrySheetProps) {
 
   return (
     <Sheet open={state.open} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent side="right" className="w-full overflow-y-auto p-0 sm:max-w-md">
-        <SheetHeader className="px-5 pt-5">
-          <SheetTitle>{TITLES[mode]}</SheetTitle>
+      <SheetContent side="right" className="w-full gap-0 overflow-y-auto p-0 sm:max-w-md">
+        <SheetHeader className="px-6 pt-6">
+          <SheetTitle className="font-hand text-[26px] font-bold">{TITLES[mode]}</SheetTitle>
           <SheetDescription>{DESCRIPTIONS[mode]}</SheetDescription>
         </SheetHeader>
-        <div className="px-5 pb-6">
+        <div className="flex-1 px-6 pt-4 pb-6">
           {state.open && ledger && accounts ? (
             <EntryForm
               key={`${state.mode}:${state.entry?.id ?? "new"}:${state.seq}`}
@@ -47,6 +47,7 @@ export function EntrySheet({ state, onClose }: EntrySheetProps) {
             <Skeleton className="h-80 w-full" />
           )}
         </div>
+        <span aria-hidden className="receipt-edge mt-auto shrink-0" />
       </SheetContent>
     </Sheet>
   );
