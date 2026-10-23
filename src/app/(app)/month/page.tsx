@@ -1,8 +1,15 @@
 import type { Metadata } from "next";
-import { PlaceholderPage } from "@/components/placeholder-page";
+import { ClientOnly } from "@/components/client-only";
+import { Skeleton } from "@/components/ui/skeleton";
+import { MonthView } from "../months/month-view";
 
 export const metadata: Metadata = { title: "本月" };
 
-export default function MonthPage() {
-  return <PlaceholderPage title="本月章節頁" milestone={4} description="每個月的第一頁：近 30 天每日收支、支出類別環圈、離基準線還有多遠。" />;
+/** 本月的章節頁：月份以瀏覽器的本地日期為準，所以在瀏覽器端決定 */
+export default function CurrentMonthPage() {
+  return (
+    <ClientOnly fallback={<Skeleton className="h-96 w-full" />}>
+      <MonthView />
+    </ClientOnly>
+  );
 }

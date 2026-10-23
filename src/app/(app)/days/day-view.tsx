@@ -239,7 +239,7 @@ export function DayView({ date: dateParam }: DayViewProps) {
           <strong className="text-expense tabular-nums">{formatTWD(mtdExpense)}</strong>　結餘{" "}
           <strong className={cn("tabular-nums", mtdIncome - mtdExpense < 0 ? "text-expense" : "text-foreground")}>{formatTWD(round2(mtdIncome - mtdExpense))}</strong>
         </span>
-        <Link href="/month" className="font-bold text-primary underline-offset-4 hover:underline">
+        <Link href={isToday ? "/month" : `/months/${month}`} className="font-bold text-primary underline-offset-4 hover:underline">
           翻到 {Number(month.slice(5, 7))} 月章節頁 →
         </Link>
       </footer>

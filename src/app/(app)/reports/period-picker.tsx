@@ -1,60 +1,71 @@
 "use client";
 
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { cn } from "cn";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   customPeriod,
   isValidISODate,
   periodForQuickOption,
   periodLabel,
   previousPeriod,
-  QUICK_OPTIONS,
-  quickOptionOf,
   shiftPeriod,
   type Period,
-  type QuickOption,
+  type PeriodPreset,
 } from "@/lib/ledger/period";
 
 interface PeriodPickerProps {
   period: Period;
-  /** 今天（YYYY-MM-DD），決定「本月」「上季」等快速選項 */
+  /** 今天（YYYY-MM-DD），決定「本月」「本季」「今年」 */
   today: string;
   onChange: (period: Period) => void;
 }
 
-/** 期間選擇器：快速選項 + 依目前長度往前後移 + 自訂起迄日 */
-export function PeriodPicker({ period, today, onChange }: PeriodPickerProps) {
-  const quick = quickOptionOf(period, today);
+const PRESETS: { value: PeriodPreset; label: string }[] = [
+  { value: "month", label: "月" },
+  { value: "quarter", label: "季" },
+  { value: "year", label: "年" },
+  { value: "custom", label: "自訂" },
+];
 
-  const pick = (value: QuickOption) => {
-    if (value === "custom") onChange({ ...period, preset: "custom" });
-    else onChange(periodForQuickOption(value, today));
+/** 期間選擇器：月／季／年／自訂的分段按鈕 + 依目前長度往前後移 + 自訂起迄日 */
+export function PeriodPicker({ period, today, onChange }: PeriodPickerProps) {
+  const pick = (preset: PeriodPreset) => {
+    if (preset === "custom") onChange({ ...period, preset: "custom" });
+    else if (preset === "month") onChange(periodForQuickOption("this-month", today));
+    else if (preset === "quarter") onChange(periodForQuickOption("this-quarter", today));
+    else onChange(periodForQuickOption("this-year", today));
   };
 
   return (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-      <Select value={quick} items={QUICK_OPTIONS} onValueChange={(value) => pick(value as QuickOption)}>
-        <SelectTrigger aria-label="期間" className="h-8 w-32">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {QUICK_OPTIONS.map((option) => (
-            <SelectItem key={option.value} value={option.value}>
-              {option.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <div role="radiogroup" aria-label="期間長度" className="inline-flex rounded-full border border-line bg-card p-0.5">
+        {PRESETS.map((preset) => {
+          const active = preset.value === period.preset;
+          return (
+            <button
+              key={preset.value}
+              type="button"
+              role="radio"
+              aria-checked={active}
+              onClick={() => pick(preset.value)}
+              className={cn(
+                "h-8 rounded-full px-3.5 text-sm transition-colors",
+                active ? "bg-foreground font-bold text-background" : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {preset.label}
+            </button>
+          );
+        })}
+      </div>
 
       <div className="flex items-center gap-1">
         <Button variant="outline" size="icon-sm" aria-label="上一期" onClick={() => onChange(shiftPeriod(period, -1))}>
           <ChevronLeft className="size-4" aria-hidden />
         </Button>
-        <span className="inline-block min-w-40 px-3 py-1 text-center font-hand text-[18px] font-bold">
-          {periodLabel(period)}
-        </span>
+        <span className="inline-block min-w-36 px-2 py-1 text-center font-hand text-[18px] font-bold">{periodLabel(period)}</span>
         <Button variant="outline" size="icon-sm" aria-label="下一期" onClick={() => onChange(shiftPeriod(period, 1))}>
           <ChevronRight className="size-4" aria-hidden />
         </Button>
