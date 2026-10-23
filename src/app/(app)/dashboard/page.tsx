@@ -40,11 +40,18 @@ export default function DashboardPage() {
         <Card className="sm:col-span-2">
           <CardHeader>
             <div className="flex items-center gap-2">
-              <CardTitle>接下來</CardTitle>
+              <CardTitle>開始記帳</CardTitle>
               <Badge variant="secondary">里程碑 2</Badge>
             </div>
-            <CardDescription>記帳功能完成後，這裡會顯示本月收支、淨值變化與最近交易。</CardDescription>
+            <CardDescription>
+              按右下角（手機在底部）的「記一筆」隨時記帳；金額可以直接打算式，例如 120+35。本月收支、淨值變化與最近交易會在里程碑 4 加到這裡。
+            </CardDescription>
           </CardHeader>
+          <CardContent>
+            <Link href="/transactions" className={buttonVariants({ variant: "outline" })}>
+              查看交易清單
+            </Link>
+          </CardContent>
         </Card>
       </div>
     </>

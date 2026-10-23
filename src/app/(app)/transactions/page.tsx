@@ -1,5 +1,14 @@
-import { PlaceholderPage } from "@/components/placeholder-page";
+import type { Metadata } from "next";
+import { ClientOnly } from "@/components/client-only";
+import { Skeleton } from "@/components/ui/skeleton";
+import { TransactionsView } from "./transactions-view";
 
-export default function Page() {
-  return <PlaceholderPage title="交易" milestone={2} description="收入／支出／轉帳快速輸入、分錄預覽、交易清單篩選與編輯。" />;
+export const metadata: Metadata = { title: "交易" };
+
+export default function TransactionsPage() {
+  return (
+    <ClientOnly fallback={<Skeleton className="h-96 w-full" />}>
+      <TransactionsView />
+    </ClientOnly>
+  );
 }

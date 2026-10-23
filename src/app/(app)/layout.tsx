@@ -1,27 +1,33 @@
 import { redirect } from "next/navigation";
 import { Suspense, type ReactNode } from "react";
+import { AddEntryButton } from "@/components/app-shell/add-entry-button";
 import { Sidebar } from "@/components/app-shell/sidebar";
 import { TopBar } from "@/components/app-shell/top-bar";
+import { EntrySheetProvider } from "@/components/entry/entry-sheet-provider";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getProfile, requireUser } from "@/lib/auth/dal";
 
 /**
  * 應用頁面的外框。側欄與頂欄是靜態外殼，
  * 登入狀態與引導完成檢查在 <Suspense> 內以串流方式進行（Cache Components 的要求）。
+ * EntrySheetProvider 讓任何頁面都能開啟「記一筆」面板。
  */
 export default function AppLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="flex min-h-full flex-1">
-      <Sidebar />
-      <div className="flex min-w-0 flex-1 flex-col">
-        <TopBar />
-        <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6 md:px-8">
-          <Suspense fallback={<PageSkeleton />}>
-            <AppGate>{children}</AppGate>
-          </Suspense>
-        </main>
+    <EntrySheetProvider>
+      <div className="flex min-h-full flex-1">
+        <Sidebar />
+        <div className="flex min-w-0 flex-1 flex-col">
+          <TopBar />
+          <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6 pb-24 md:px-8">
+            <Suspense fallback={<PageSkeleton />}>
+              <AppGate>{children}</AppGate>
+            </Suspense>
+          </main>
+        </div>
       </div>
-    </div>
+      <AddEntryButton />
+    </EntrySheetProvider>
   );
 }
 
