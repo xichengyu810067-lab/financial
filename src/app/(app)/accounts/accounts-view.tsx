@@ -5,6 +5,8 @@ import { Archive, ArchiveRestore, ArrowDown, ArrowUp, EllipsisVertical, Pencil, 
 import { toast } from "sonner";
 import { AccountIcon } from "@/components/account-icon";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { Stamp } from "@/components/journal/stamp";
+import { WashiTape } from "@/components/journal/washi-tape";
 import { PageHeader } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -201,12 +203,11 @@ export function AccountsView() {
 
 function SummaryCard({ label, value, emphasis }: { label: string; value: number; emphasis?: boolean }) {
   return (
-    <Card className="py-4">
-      <CardContent className="grid gap-1">
+    <Card size="sm">
+      {emphasis ? <Stamp className="absolute top-2 right-3" size="sm">淨值</Stamp> : <WashiTape tone={label === "資產合計" ? "mint" : "sun"} />}
+      <CardContent className="grid gap-0.5">
         <span className="text-xs text-muted-foreground">{label}</span>
-        <span className={emphasis ? "text-2xl font-semibold tabular-nums" : "text-xl font-medium tabular-nums"}>
-          {formatTWD(value)}
-        </span>
+        <span className={emphasis ? "text-2xl font-bold tabular-nums" : "text-xl font-bold tabular-nums"}>{formatTWD(value)}</span>
       </CardContent>
     </Card>
   );
@@ -225,6 +226,7 @@ function Section({
 }) {
   return (
     <Card>
+      <WashiTape tone={title === "資產" ? "accent" : "sun"} />
       <CardHeader>
         <div className="flex items-center gap-2">
           <CardTitle>{title}</CardTitle>

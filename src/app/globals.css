@@ -4,12 +4,20 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* ---------------------------------------------------------------------------
+   手帳・漸層主題
+   - 紙底、墨字、線條：淺色／深色各一組（.dark）
+   - 主題色：四組漸層，以 html[data-accent] 切換；預設粉紅桃紅
+   - 字體：內文粉圓體（Huninn），標題與手寫感用霞鶩文楷（LXGW WenKai TC）
+--------------------------------------------------------------------------- */
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: "Huninn", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+  --font-hand: "LXGW WenKai TC", "Huninn", "Noto Sans TC", serif;
   --font-heading: var(--font-sans);
+  --font-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -39,6 +47,14 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  /* 手帳專用 */
+  --color-income: var(--income);
+  --color-expense: var(--expense);
+  --color-line: var(--line);
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-tint: var(--accent-tint);
+  --color-sticky: var(--sticky);
+  --color-sticky-ink: var(--sticky-ink);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -48,83 +64,208 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-:root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+/* 主題色（漸層左下 → 右上）。accent-ink 是能放在紙底上當文字的深色版。 */
+:root,
+:root[data-accent="pink"] {
+  --accent-from: #ff359a;
+  --accent-to: #ff44ff;
+  --accent-ink-light: #c2187a;
+  --accent-ink-dark: #ff7ac3;
+  --accent-tint-light: #ffe8f4;
+  --accent-tint-dark: rgba(255, 53, 154, 0.2);
+  --accent-shadow-light: #e8b8d2;
+  --accent-shadow-dark: #5a2a45;
+  --highlight-from-light: #ffe1f1;
+  --highlight-to-light: #ffe8ff;
+}
+:root[data-accent="sunset"] {
+  --accent-from: #ff6a3d;
+  --accent-to: #ffb347;
+  --accent-ink-light: #b8400f;
+  --accent-ink-dark: #ffb08a;
+  --accent-tint-light: #ffe9dc;
+  --accent-tint-dark: rgba(255, 106, 61, 0.22);
+  --accent-shadow-light: #f0c4ad;
+  --accent-shadow-dark: #5c2e1c;
+  --highlight-from-light: #ffe4d6;
+  --highlight-to-light: #fff1d6;
+}
+:root[data-accent="mint"] {
+  --accent-from: #2f9e8f;
+  --accent-to: #7be0c8;
+  --accent-ink-light: #1f6f65;
+  --accent-ink-dark: #8ee3d2;
+  --accent-tint-light: #ddf5f0;
+  --accent-tint-dark: rgba(47, 158, 143, 0.22);
+  --accent-shadow-light: #b7ddd4;
+  --accent-shadow-dark: #1f4a43;
+  --highlight-from-light: #d9f3ec;
+  --highlight-to-light: #e6faf4;
+}
+:root[data-accent="violet"] {
+  --accent-from: #4f46e5;
+  --accent-to: #a78bfa;
+  --accent-ink-light: #4338ca;
+  --accent-ink-dark: #c4b5fd;
+  --accent-tint-light: #e9e5ff;
+  --accent-tint-dark: rgba(79, 70, 229, 0.24);
+  --accent-shadow-light: #c9c2f2;
+  --accent-shadow-dark: #312a6b;
+  --highlight-from-light: #e6e2ff;
+  --highlight-to-light: #f0e8ff;
 }
 
+/* 淺色：米白紙底 */
+:root {
+  --radius: 1rem;
+  --background: #fbf5ec;
+  --foreground: #2b2420;
+  --card: #fffdf9;
+  --card-foreground: #2b2420;
+  --popover: #fffdf9;
+  --popover-foreground: #2b2420;
+  --primary: var(--accent-ink-light);
+  --primary-foreground: #ffffff;
+  --secondary: #f3ebe0;
+  --secondary-foreground: #2b2420;
+  --muted: #f3ebe0;
+  --muted-foreground: #6f6156;
+  --accent: var(--accent-tint-light);
+  --accent-foreground: var(--accent-ink-light);
+  --destructive: #b93e22;
+  --border: #eadfd0;
+  --input: #eadfd0;
+  --ring: var(--accent-from);
+  --chart-1: var(--accent-from);
+  --chart-2: #2f7d5b;
+  --chart-3: #b93e22;
+  --chart-4: #d9b84a;
+  --chart-5: #6f6156;
+  --sidebar: #fbf5ec;
+  --sidebar-foreground: #2b2420;
+  --sidebar-primary: var(--accent-ink-light);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #fffdf9;
+  --sidebar-accent-foreground: #2b2420;
+  --sidebar-border: #eadfd0;
+  --sidebar-ring: var(--accent-from);
+  /* 手帳專用 */
+  --income: #2f7d5b;
+  --expense: #b93e22;
+  --line: #eadfd0;
+  --paper-dot: #e6dacb;
+  --accent-ink: var(--accent-ink-light);
+  --accent-tint: var(--accent-tint-light);
+  --accent-shadow: var(--accent-shadow-light);
+  --ink-on-accent: #1f1418;
+  --highlight-from: var(--highlight-from-light);
+  --highlight-to: var(--highlight-to-light);
+  --sticky: #fff1a8;
+  --sticky-ink: #5a4a00;
+  --sticky-shadow: #e8d77a;
+  --card-shadow: 0 2px 0 var(--line);
+}
+
+/* 深色：暖紫炭紙 */
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --background: #221b1f;
+  --foreground: #f4eae2;
+  --card: #2c242a;
+  --card-foreground: #f4eae2;
+  --popover: #2c242a;
+  --popover-foreground: #f4eae2;
+  --primary: var(--accent-ink-dark);
+  --primary-foreground: #1f1418;
+  --secondary: #3f343b;
+  --secondary-foreground: #f4eae2;
+  --muted: #3a3035;
+  --muted-foreground: #b8a8a1;
+  --accent: var(--accent-tint-dark);
+  --accent-foreground: var(--accent-ink-dark);
+  --destructive: #ff9a7a;
+  --border: #3f343b;
+  --input: #4a3d44;
+  --ring: var(--accent-to);
+  --chart-1: var(--accent-to);
+  --chart-2: #7fd1a6;
+  --chart-3: #ff9a7a;
+  --chart-4: #d9b84a;
+  --chart-5: #b8a8a1;
+  --sidebar: #221b1f;
+  --sidebar-foreground: #f4eae2;
+  --sidebar-primary: var(--accent-ink-dark);
+  --sidebar-primary-foreground: #1f1418;
+  --sidebar-accent: #2c242a;
+  --sidebar-accent-foreground: #f4eae2;
+  --sidebar-border: #3f343b;
+  --sidebar-ring: var(--accent-to);
+  --income: #7fd1a6;
+  --expense: #ff9a7a;
+  --line: #3f343b;
+  --paper-dot: #3a2f35;
+  --accent-ink: var(--accent-ink-dark);
+  --accent-tint: var(--accent-tint-dark);
+  --accent-shadow: var(--accent-shadow-dark);
+  --ink-on-accent: #1f1418;
+  --highlight-from: rgba(255, 53, 154, 0.3);
+  --highlight-to: rgba(255, 68, 255, 0.3);
+  --sticky: #fff1a8;
+  --sticky-ink: #5a4a00;
+  --sticky-shadow: #c9b85e;
+  --card-shadow: 0 2px 0 #15100f;
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
-  body {
-    @apply bg-background text-foreground;
-  }
   html {
     @apply font-sans;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "tnum" 1;
+  }
+}
+
+@layer utilities {
+  /* 點格紙底 */
+  .paper-dots {
+    background-color: var(--background);
+    background-image: radial-gradient(var(--paper-dot) 1px, transparent 1px);
+    background-size: 18px 18px;
+  }
+  /* 主題漸層：左下 → 右上 */
+  .bg-accent-gradient {
+    background-image: linear-gradient(to top right, var(--accent-from), var(--accent-to));
+    color: var(--ink-on-accent);
+  }
+  .text-accent-gradient {
+    background-image: linear-gradient(to top right, var(--accent-from), var(--accent-to));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  /* 螢光筆標籤底色 */
+  .bg-highlight {
+    background-image: linear-gradient(to top right, var(--highlight-from), var(--highlight-to));
+  }
+  .font-hand {
+    font-family: var(--font-hand);
+  }
+  .shadow-paper {
+    box-shadow: var(--card-shadow);
+  }
+  .shadow-accent-press {
+    box-shadow: 0 4px 0 var(--accent-shadow);
+  }
+  /* 票根鋸齒邊（放在容器底部，顏色＝紙底） */
+  .receipt-edge {
+    height: 14px;
+    background-image:
+      linear-gradient(-45deg, var(--background) 7px, transparent 0),
+      linear-gradient(45deg, var(--background) 7px, transparent 0);
+    background-size: 14px 14px;
+    background-position: left bottom;
   }
 }

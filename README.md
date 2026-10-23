@@ -17,6 +17,11 @@
 
 完整路線圖與記帳規則見 [docs/ROADMAP.md](docs/ROADMAP.md)。
 
+## 外觀
+
+手帳風設計：點格紙底、粉紅到桃紅的主題漸層、粉圓體與霞鶩文楷，含深淺色與四組主題色。
+規則見 [docs/design.md](docs/design.md)；平台名稱改 `src/lib/brand.ts` 的 `BRAND_NAME`。
+
 ## 技術架構
 
 - **前端**：Next.js 16（App Router、Cache Components）、React 19、TypeScript、Tailwind CSS v4、shadcn/ui

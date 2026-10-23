@@ -10,12 +10,12 @@ interface NavLinksProps {
   className?: string;
 }
 
-/** 側欄與手機抽屜共用的導覽連結 */
+/** 筆記本索引標籤：每一頁是一張往右伸出的標籤，目前頁面是主題漸層並往右「抽出來」 */
 export function NavLinks({ onNavigate, className }: NavLinksProps) {
   const pathname = usePathname();
 
   return (
-    <nav className={cn("flex flex-col gap-1", className)} aria-label="主選單">
+    <nav className={cn("flex flex-col gap-2.5", className)} aria-label="主選單">
       {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
         const active = pathname === href || pathname.startsWith(`${href}/`);
         return (
@@ -25,10 +25,10 @@ export function NavLinks({ onNavigate, className }: NavLinksProps) {
             onClick={onNavigate}
             aria-current={active ? "page" : undefined}
             className={cn(
-              "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
+              "flex items-center gap-3 rounded-l-2xl border border-r-0 px-4 py-2.5 text-sm transition-all focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/40",
               active
-                ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground"
-                : "text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground",
+                ? "ml-2 border-transparent bg-accent-gradient font-bold shadow-[-4px_4px_0_var(--accent-shadow)]"
+                : "border-border bg-card text-foreground/85 hover:translate-x-0.5 hover:text-foreground",
             )}
           >
             <Icon className="size-4" aria-hidden />

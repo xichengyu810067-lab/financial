@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
-import { LogOut, Settings, UserRound } from "lucide-react";
+import { LogOut, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -21,13 +21,18 @@ export function UserMenu() {
   const { data: profile, isPending } = useProfile();
   const [signingOut, startSignOut] = useTransition();
 
-  if (isPending) return <Skeleton className="h-8 w-24" />;
+  if (isPending) return <Skeleton className="h-8 w-24 rounded-full" />;
+
+  const name = profile?.display_name ?? "使用者";
+  const initial = name.trim().charAt(0).toUpperCase() || "?";
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger render={<Button variant="ghost" size="sm" />}>
-        <UserRound className="size-4" aria-hidden />
-        <span className="max-w-32 truncate">{profile?.display_name ?? "使用者"}</span>
+      <DropdownMenuTrigger render={<Button variant="secondary" size="sm" className="bg-card pl-1 ring-1 ring-border hover:bg-muted" />}>
+        <span aria-hidden className="inline-flex size-6 items-center justify-center rounded-full bg-accent-gradient text-[12px] font-black">
+          {initial}
+        </span>
+        <span className="max-w-32 truncate">{name}</span>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-48">
         <DropdownMenuLabel className="truncate">{profile?.email ?? ""}</DropdownMenuLabel>

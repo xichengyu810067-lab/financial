@@ -9,8 +9,8 @@ interface PostingPreviewProps {
 /** 表單底部的分錄預覽：「借 飲食 $150 / 貸 現金 $150」 */
 export function PostingPreview({ lines, nameOf }: PostingPreviewProps) {
   return (
-    <div className="rounded-lg border border-dashed bg-muted/40 px-3 py-2 text-xs">
-      <p className="mb-1 font-medium text-muted-foreground">複式分錄預覽</p>
+    <div className="rounded-xl border border-dashed border-line bg-background px-3.5 py-2.5 font-hand text-[13px] text-muted-foreground">
+      <p className="mb-1 text-accent-foreground">複式分錄預覽</p>
       {lines && lines.length > 0 ? (
         <ul className="grid gap-0.5 tabular-nums">
           {lines

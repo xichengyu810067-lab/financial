@@ -22,7 +22,7 @@ export function MonthSwitcher({ month, onChange }: MonthSwitcherProps) {
         value={month}
         onChange={(e) => isValidMonth(e.target.value) && onChange(e.target.value)}
         aria-label="選擇月份"
-        className="w-40 text-center"
+        className="w-44 rounded-[6px] border-0 bg-highlight text-center font-hand text-[17px] text-accent-foreground"
       />
       <Button variant="outline" size="icon-sm" aria-label="下一個月" onClick={() => onChange(shiftMonth(month, 1))}>
         <ChevronRight className="size-4" aria-hidden />

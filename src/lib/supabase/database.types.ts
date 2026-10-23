@@ -365,18 +365,21 @@ export type Database = {
           display_name: string | null;
           id: string;
           onboarded_at: string | null;
+          slogan: string | null;
         };
         Insert: {
           created_at?: string;
           display_name?: string | null;
           id: string;
           onboarded_at?: string | null;
+          slogan?: string | null;
         };
         Update: {
           created_at?: string;
           display_name?: string | null;
           id?: string;
           onboarded_at?: string | null;
+          slogan?: string | null;
         };
         Relationships: [];
       };

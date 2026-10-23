@@ -206,7 +206,7 @@ export function EntryForm({ ledger, accounts, balances, mode, entry, onDone }: E
       }}
       className="grid gap-4"
     >
-      <div className="grid grid-cols-3 gap-1 rounded-lg bg-muted p-1" role="radiogroup" aria-label="交易種類">
+      <div className="grid grid-cols-3 gap-1 rounded-full bg-muted p-1.5" role="radiogroup" aria-label="交易種類">
         {KINDS.map((k) => (
           <button
             key={k.value}
@@ -215,8 +215,8 @@ export function EntryForm({ ledger, accounts, balances, mode, entry, onDone }: E
             aria-checked={form.kind === k.value}
             onClick={() => changeKind(k.value)}
             className={cn(
-              "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
-              form.kind === k.value ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground",
+              "rounded-full px-3 py-2 text-sm font-bold transition-colors",
+              form.kind === k.value ? "bg-accent-gradient" : "text-muted-foreground hover:text-foreground",
             )}
           >
             {k.label}
