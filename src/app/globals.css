@@ -55,6 +55,8 @@
   --color-accent-tint: var(--accent-tint);
   --color-sticky: var(--sticky);
   --color-sticky-ink: var(--sticky-ink);
+  --color-paper: var(--paper);
+  --color-warning: var(--warning);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -115,10 +117,10 @@
   --highlight-to-light: #f0e8ff;
 }
 
-/* 淺色：米白紙底 */
+/* 淺色：桌面是暖灰，筆記本內頁是米白紙 */
 :root {
   --radius: 1rem;
-  --background: #fbf5ec;
+  --background: #efe7da;
   --foreground: #2b2420;
   --card: #fffdf9;
   --card-foreground: #2b2420;
@@ -126,34 +128,37 @@
   --popover-foreground: #2b2420;
   --primary: var(--accent-ink-light);
   --primary-foreground: #ffffff;
-  --secondary: #f3ebe0;
+  --secondary: #f1ebe2;
   --secondary-foreground: #2b2420;
-  --muted: #f3ebe0;
+  --muted: #f1ebe2;
   --muted-foreground: #6f6156;
   --accent: var(--accent-tint-light);
   --accent-foreground: var(--accent-ink-light);
-  --destructive: #b93e22;
-  --border: #eadfd0;
-  --input: #eadfd0;
+  --destructive: #d4552f;
+  --border: #e6dccb;
+  --input: #e6dccb;
   --ring: var(--accent-from);
   --chart-1: var(--accent-from);
-  --chart-2: #2f7d5b;
-  --chart-3: #b93e22;
-  --chart-4: #d9b84a;
+  --chart-2: #1f8a5b;
+  --chart-3: #d4552f;
+  --chart-4: #d97706;
   --chart-5: #6f6156;
-  --sidebar: #fbf5ec;
+  --sidebar: #efe7da;
   --sidebar-foreground: #2b2420;
   --sidebar-primary: var(--accent-ink-light);
   --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: #fffdf9;
   --sidebar-accent-foreground: #2b2420;
-  --sidebar-border: #eadfd0;
+  --sidebar-border: #e6dccb;
   --sidebar-ring: var(--accent-from);
   /* 手帳專用 */
-  --income: #2f7d5b;
-  --expense: #b93e22;
-  --line: #eadfd0;
-  --paper-dot: #e6dacb;
+  --income: #1f8a5b;
+  --expense: #d4552f;
+  --warning: #d97706;
+  --line: #e6dccb;
+  --paper: #fbf6ec;
+  --paper-line: rgba(43, 36, 32, 0.06);
+  --paper-dot: rgba(120, 90, 60, 0.12);
   --accent-ink: var(--accent-ink-light);
   --accent-tint: var(--accent-tint-light);
   --accent-shadow: var(--accent-shadow-light);
@@ -166,9 +171,9 @@
   --card-shadow: 0 2px 0 var(--line);
 }
 
-/* 深色：暖紫炭紙 */
+/* 深色：暖紫炭桌面，深色紙 */
 .dark {
-  --background: #221b1f;
+  --background: #1c171a;
   --foreground: #f4eae2;
   --card: #2c242a;
   --card-foreground: #f4eae2;
@@ -201,8 +206,11 @@
   --sidebar-ring: var(--accent-to);
   --income: #7fd1a6;
   --expense: #ff9a7a;
+  --warning: #f5b14d;
   --line: #3f343b;
-  --paper-dot: #3a2f35;
+  --paper: #27202a;
+  --paper-line: rgba(255, 255, 255, 0.05);
+  --paper-dot: rgba(255, 255, 255, 0.05);
   --accent-ink: var(--accent-ink-dark);
   --accent-tint: var(--accent-tint-dark);
   --accent-shadow: var(--accent-shadow-dark);
@@ -267,5 +275,74 @@
       linear-gradient(45deg, var(--background) 7px, transparent 0);
     background-size: 14px 14px;
     background-position: left bottom;
+  }
+  /* 筆記本內頁：米白紙 + 淡橫線 + 細微紙紋 */
+  .paper-page {
+    background-color: var(--paper);
+    background-image:
+      linear-gradient(var(--paper-line) 1px, transparent 1px),
+      radial-gradient(var(--paper-dot) 0.5px, transparent 0.8px);
+    background-size:
+      100% 28px,
+      5px 5px;
+  }
+  /* 封面材質：疊在封面顏色上的紋理 */
+  .cover-linen {
+    background-image:
+      repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.06) 0 2px, transparent 2px 5px),
+      repeating-linear-gradient(-45deg, rgba(0, 0, 0, 0.07) 0 2px, transparent 2px 5px);
+  }
+  .cover-leather {
+    background-image:
+      radial-gradient(rgba(255, 255, 255, 0.1) 0.5px, transparent 1px),
+      linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(0, 0, 0, 0.14));
+    background-size:
+      3px 3px,
+      100% 100%;
+  }
+  .cover-kraft {
+    background-image:
+      repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.05) 0 1px, transparent 1px 4px),
+      radial-gradient(rgba(255, 255, 255, 0.18) 0.5px, transparent 1px);
+    background-size:
+      100% 4px,
+      5px 5px;
+  }
+  /* 翻書：封面繞左緣翻起，整本書放大淡出 */
+  .book-cover {
+    transform-origin: left center;
+    transform-style: preserve-3d;
+    backface-visibility: hidden;
+    transition: transform 0.9s cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+  .book-scene[data-opening="true"] .book-cover {
+    transform: rotateY(-150deg);
+  }
+  .book-scene[data-opening="true"] {
+    animation: book-zoom 1s ease-in forwards;
+  }
+  @keyframes book-zoom {
+    0% {
+      transform: scale(1);
+      opacity: 1;
+    }
+    60% {
+      transform: scale(1.04);
+      opacity: 1;
+    }
+    100% {
+      transform: scale(1.18);
+      opacity: 0;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .book-cover {
+      transition: none;
+    }
+    .book-scene[data-opening="true"] {
+      animation: none;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
   }
 }

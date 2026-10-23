@@ -9,6 +9,12 @@ import { getSupabaseEnv } from "@/lib/supabase/env";
  */
 
 const PROTECTED_PREFIXES = [
+  "/cover",
+  "/today",
+  "/days",
+  "/month",
+  "/months",
+  "/year",
   "/dashboard",
   "/transactions",
   "/accounts",
@@ -57,7 +63,7 @@ export async function proxy(request: NextRequest) {
 
   if (isLoggedIn && (AUTH_PAGES.has(pathname) || pathname === "/")) {
     const appUrl = request.nextUrl.clone();
-    appUrl.pathname = "/dashboard";
+    appUrl.pathname = "/cover";
     appUrl.search = "";
     return NextResponse.redirect(appUrl);
   }

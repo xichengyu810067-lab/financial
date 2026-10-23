@@ -212,7 +212,13 @@ export function useMoveAccount() {
 export function useUpdateLedger() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (input: { id: string; name?: string; start_date?: string }) => {
+    mutationFn: async (input: {
+      id: string;
+      name?: string;
+      start_date?: string;
+      cover_color?: string | null;
+      cover_material?: string | null;
+    }) => {
       const supabase = createClient();
       const { id, ...patch } = input;
       unwrap(await supabase.from("ledgers").update(patch).eq("id", id));

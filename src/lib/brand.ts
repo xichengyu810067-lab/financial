@@ -20,3 +20,36 @@ export type AccentId = (typeof ACCENTS)[number]["id"];
 export const DEFAULT_ACCENT: AccentId = "pink";
 
 export const ACCENT_STORAGE_KEY = "financial:accent";
+
+/** 筆記本封面材質（存在 ledgers.cover_material） */
+export const COVER_MATERIALS = [
+  { id: "linen", label: "布面", description: "織紋，最像手帳本" },
+  { id: "leather", label: "皮面", description: "皮革顆粒，沉穩" },
+  { id: "kraft", label: "牛皮紙", description: "橫紋紙面，輕鬆" },
+] as const;
+
+export type CoverMaterialId = (typeof COVER_MATERIALS)[number]["id"];
+
+export const DEFAULT_COVER_MATERIAL: CoverMaterialId = "linen";
+
+/** 筆記本封面顏色（存在 ledgers.cover_color）；label 用來說明，ink 是封面上文字的顏色 */
+export const COVER_COLORS = [
+  { id: "navy", label: "深藍", hex: "#2F4A63", spine: "#243B50", ink: "#F7F1E6" },
+  { id: "forest", label: "墨綠", hex: "#2F5D4A", spine: "#24493A", ink: "#F3F7EC" },
+  { id: "plum", label: "深紫", hex: "#5B3A5E", spine: "#472C49", ink: "#F7EEF6" },
+  { id: "brown", label: "咖啡", hex: "#6B3E2E", spine: "#563225", ink: "#F3E6C9" },
+  { id: "kraft", label: "牛皮色", hex: "#C9A277", spine: "#B08A5E", ink: "#2B2420" },
+  { id: "charcoal", label: "炭黑", hex: "#3A3438", spine: "#2B262A", ink: "#F4EAE2" },
+] as const;
+
+export type CoverColorId = (typeof COVER_COLORS)[number]["id"];
+
+export const DEFAULT_COVER_COLOR: CoverColorId = "navy";
+
+export function coverMaterialOf(value: string | null | undefined): CoverMaterialId {
+  return COVER_MATERIALS.some((m) => m.id === value) ? (value as CoverMaterialId) : DEFAULT_COVER_MATERIAL;
+}
+
+export function coverColorOf(value: string | null | undefined) {
+  return COVER_COLORS.find((c) => c.id === value) ?? COVER_COLORS[0];
+}

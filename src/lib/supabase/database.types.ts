@@ -340,6 +340,8 @@ export type Database = {
       }
       ledgers: {
         Row: {
+          cover_color: string | null
+          cover_material: string | null
           created_at: string
           currency: string
           id: string
@@ -348,6 +350,8 @@ export type Database = {
           start_date: string
         }
         Insert: {
+          cover_color?: string | null
+          cover_material?: string | null
           created_at?: string
           currency?: string
           id?: string
@@ -356,6 +360,8 @@ export type Database = {
           start_date?: string
         }
         Update: {
+          cover_color?: string | null
+          cover_material?: string | null
           created_at?: string
           currency?: string
           id?: string

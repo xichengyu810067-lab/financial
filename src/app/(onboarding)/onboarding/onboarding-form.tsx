@@ -75,7 +75,7 @@ function OnboardingFormInner({ ledger, accounts }: { ledger: Ledger; accounts: A
         })),
       });
       toast.success("帳本設定完成");
-      router.push("/dashboard");
+      router.push("/cover");
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "儲存失敗，請再試一次");

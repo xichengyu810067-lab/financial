@@ -3,10 +3,10 @@
 import { useState } from "react";
 import { Archive, ArchiveRestore, ArrowDown, ArrowUp, EllipsisVertical, Pencil, Plus, Trash } from "lucide-react";
 import { toast } from "sonner";
+import { cn } from "cn";
 import { AccountIcon } from "@/components/account-icon";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { Stamp } from "@/components/journal/stamp";
-import { WashiTape } from "@/components/journal/washi-tape";
 import { PageHeader } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -203,8 +203,12 @@ export function AccountsView() {
 
 function SummaryCard({ label, value, emphasis }: { label: string; value: number; emphasis?: boolean }) {
   return (
-    <Card size="sm">
-      {emphasis ? <Stamp className="absolute top-2 right-3" size="sm">淨值</Stamp> : <WashiTape tone={label === "資產合計" ? "mint" : "sun"} />}
+    <Card size="sm" className={cn("border-t-[3px]", emphasis ? "border-t-primary" : label === "資產合計" ? "border-t-income" : "border-t-expense")}>
+      {emphasis && (
+        <Stamp className="absolute top-2 right-3" size="sm">
+          淨值
+        </Stamp>
+      )}
       <CardContent className="grid gap-0.5">
         <span className="text-xs text-muted-foreground">{label}</span>
         <span className={emphasis ? "text-2xl font-bold tabular-nums" : "text-xl font-bold tabular-nums"}>{formatTWD(value)}</span>
@@ -226,7 +230,6 @@ function Section({
 }) {
   return (
     <Card>
-      <WashiTape tone={title === "資產" ? "accent" : "sun"} />
       <CardHeader>
         <div className="flex items-center gap-2">
           <CardTitle>{title}</CardTitle>

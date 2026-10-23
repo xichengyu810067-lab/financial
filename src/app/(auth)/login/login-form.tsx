@@ -16,7 +16,7 @@ const LINK_ERRORS: Record<string, string> = {
 
 export function LoginForm() {
   const searchParams = useSearchParams();
-  const next = searchParams.get("next") ?? "/dashboard";
+  const next = searchParams.get("next") ?? "/cover";
   const linkError = searchParams.get("error");
   const [state, formAction, pending] = useActionState(signIn, null);
 

@@ -5,12 +5,8 @@ import { ArrowLeftRight, FileText, Tags, Wallet } from "lucide-react";
 import { cn } from "cn";
 import { AccountIcon } from "@/components/account-icon";
 import { useEntrySheet } from "@/components/entry/entry-sheet-provider";
-import { DoodleUnderline } from "@/components/journal/doodle-underline";
-import { Highlight } from "@/components/journal/highlight";
-import { ReceiptCard, ReceiptList } from "@/components/journal/receipt-card";
+import { ReceiptList } from "@/components/journal/receipt-card";
 import { Stamp } from "@/components/journal/stamp";
-import { StickyNote } from "@/components/journal/sticky-note";
-import { WashiTape } from "@/components/journal/washi-tape";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,6 +17,7 @@ import { formatTWD } from "@/lib/ledger/format";
 import { useAccounts, useBalances, useLedger, useProfile } from "@/lib/ledger/queries";
 import { isBalanceAccount, type Account } from "@/lib/ledger/types";
 
+/** 今天這一頁的暫時版：本月摘要、淨值、最近交易。「一天一頁」在下一個 PR 取代這裡。 */
 export function DashboardView() {
   const { data: profile } = useProfile();
   const { data: ledger } = useLedger();
@@ -35,8 +32,8 @@ export function DashboardView() {
     return (
       <div className="grid gap-4">
         <Skeleton className="h-12 w-64" />
-        <Skeleton className="h-28 w-full rounded-[22px]" />
-        <Skeleton className="h-64 w-full rounded-[22px]" />
+        <Skeleton className="h-28 w-full rounded-[18px]" />
+        <Skeleton className="h-64 w-full rounded-[18px]" />
       </div>
     );
   }
@@ -57,10 +54,11 @@ export function DashboardView() {
     <div className="grid gap-6">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="font-hand text-[34px] font-bold leading-tight">
+          <div className="text-xs tracking-[0.18em] text-muted-foreground">{formatDayLabel(now)}</div>
+          <h1 className="mt-1 font-hand text-[34px] leading-tight font-bold">
             {greeting}，{name}
           </h1>
-          <p className="mt-1 inline-flex flex-col font-hand text-base text-muted-foreground">
+          <p className="mt-1 font-hand text-base text-muted-foreground">
             {profile.slogan ? (
               <span>{profile.slogan}</span>
             ) : (
@@ -68,40 +66,35 @@ export function DashboardView() {
                 到設定頁寫一句自己的小標語
               </Link>
             )}
-            <DoodleUnderline />
           </p>
         </div>
-        <StickyNote>{formatDayLabel(now)}</StickyNote>
       </header>
 
       <section aria-label="本月摘要" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card size="sm">
-          <WashiTape tone="accent" />
+        <Card size="sm" className="border-t-[3px] border-t-income">
           <CardContent className="grid gap-0.5">
             <span className="text-xs text-muted-foreground">本月收入</span>
             <span className="text-[26px] font-bold text-income tabular-nums">{formatTWD(income)}</span>
             <span className="text-xs text-muted-foreground">{monthLabel(month)}</span>
           </CardContent>
         </Card>
-        <Card size="sm">
-          <WashiTape tone="mint" />
+        <Card size="sm" className="border-t-[3px] border-t-expense">
           <CardContent className="grid gap-0.5">
             <span className="text-xs text-muted-foreground">本月支出</span>
             <span className="text-[26px] font-bold text-expense tabular-nums">{formatTWD(expense)}</span>
             <span className="text-xs text-muted-foreground">{entries.filter((e) => e.kind === "expense").length} 筆</span>
           </CardContent>
         </Card>
-        <Card size="sm">
-          <WashiTape tone="sun" />
+        <Card size="sm" className="border-t-[3px] border-t-foreground">
           <CardContent className="grid gap-0.5">
             <span className="text-xs text-muted-foreground">本月結餘</span>
             <span className={cn("text-[26px] font-bold tabular-nums", income - expense < 0 && "text-expense")}>{formatTWD(income - expense)}</span>
             <span className="text-xs text-muted-foreground">{income > 0 ? `存下收入的 ${Math.round(((income - expense) / income) * 100)}%` : "本月還沒有收入"}</span>
           </CardContent>
         </Card>
-        <Card size="sm">
+        <Card size="sm" className="border-t-[3px] border-t-primary">
           <Stamp className="absolute top-3 right-3">淨值</Stamp>
-          <CardContent className="grid gap-0.5">
+          <CardContent className="grid gap-0.5 pr-16">
             <span className="text-xs text-muted-foreground">目前淨值</span>
             <span className="text-[26px] font-bold tabular-nums">{formatTWD(assets - liabilities)}</span>
             <span className="text-xs text-muted-foreground">
@@ -112,7 +105,7 @@ export function DashboardView() {
       </section>
 
       <section className="grid gap-4 lg:grid-cols-5">
-        <ReceiptCard className="lg:col-span-3" notchBottom={40}>
+        <Card className="lg:col-span-3">
           <CardHeader className="flex flex-row items-baseline justify-between">
             <CardTitle>最近交易</CardTitle>
             <Link href="/transactions" className="text-sm font-bold text-primary underline-offset-4 hover:underline">
@@ -126,7 +119,7 @@ export function DashboardView() {
               </p>
             ) : (
               <>
-                <Highlight>{dayLabel(recent[0].entry_date)}</Highlight>
+                <span className="font-hand text-[15px] font-bold">{dayLabel(recent[0].entry_date)}</span>
                 <ReceiptList>
                   {recent.map((entry) => (
                     <RecentRow key={entry.id} entry={entry} accountsById={accountsById} onClick={() => openEdit(entry)} />
@@ -135,15 +128,15 @@ export function DashboardView() {
               </>
             )}
           </CardContent>
-        </ReceiptCard>
+        </Card>
 
         <Card className="lg:col-span-2">
           <CardHeader>
             <div className="flex items-center gap-2">
               <CardTitle>接下來</CardTitle>
-              <Badge variant="highlight">里程碑 4</Badge>
+              <Badge variant="secondary">里程碑 4</Badge>
             </div>
-            <CardDescription>收支趨勢與類別占比圖會在下一個里程碑加到這裡。</CardDescription>
+            <CardDescription>一天一頁、月章節頁圖表與花過頭警示會陸續加到這本筆記本。</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-2">
             {!hasAccounts && (

@@ -25,6 +25,9 @@ type ReportTab = (typeof TABS)[number]["value"];
 
 const isTab = (value: string | null): value is ReportTab => TABS.some((t) => t.value === value);
 
+/** 每張報表放在一張白卡上 */
+const PANEL = "mt-5 rounded-[18px] bg-card p-5 shadow-paper ring-1 ring-border";
+
 /**
  * 報表頁：分頁與期間都放在網址（?tab=&preset=&from=&to=），重新整理或分享連結都能回到同一張表。
  * 點任一列會開右側明細面板；面板裡點交易再開記帳面板編輯，存檔後報表與明細一起重算。
@@ -62,7 +65,7 @@ export function ReportsView() {
       <div className="grid gap-4">
         <Skeleton className="h-8 w-32" />
         <Skeleton className="h-10 w-full" />
-        <Skeleton className="h-96 w-full rounded-[22px]" />
+        <Skeleton className="h-96 w-full rounded-[18px]" />
       </div>
     );
   }
@@ -84,13 +87,13 @@ export function ReportsView() {
               </TabsTrigger>
             ))}
           </TabsList>
-          <TabsContent value="income">
+          <TabsContent value="income" className={PANEL}>
             <IncomeStatement {...reportProps} />
           </TabsContent>
-          <TabsContent value="balance">
+          <TabsContent value="balance" className={PANEL}>
             <BalanceSheet {...reportProps} />
           </TabsContent>
-          <TabsContent value="cashflow">
+          <TabsContent value="cashflow" className={PANEL}>
             <CashFlow {...reportProps} />
           </TabsContent>
         </Tabs>

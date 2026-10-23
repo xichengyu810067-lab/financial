@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
-import { LogOut, Settings } from "lucide-react";
+import { BookOpen, LogOut, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -29,7 +29,7 @@ export function UserMenu() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger render={<Button variant="secondary" size="sm" className="bg-card pl-1 ring-1 ring-border hover:bg-muted" />}>
-        <span aria-hidden className="inline-flex size-6 items-center justify-center rounded-full bg-accent-gradient text-[12px] font-black">
+        <span aria-hidden className="inline-flex size-6 items-center justify-center rounded-full bg-foreground text-[12px] font-black text-background">
           {initial}
         </span>
         <span className="max-w-32 truncate">{name}</span>
@@ -37,6 +37,10 @@ export function UserMenu() {
       <DropdownMenuContent align="end" className="min-w-48">
         <DropdownMenuLabel className="truncate">{profile?.email ?? ""}</DropdownMenuLabel>
         <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={() => router.push("/cover")}>
+          <BookOpen className="size-4" aria-hidden />
+          回到封面
+        </DropdownMenuItem>
         <DropdownMenuItem onClick={() => router.push("/settings")}>
           <Settings className="size-4" aria-hidden />
           設定
