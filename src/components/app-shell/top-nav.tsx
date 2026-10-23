@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Suspense } from "react";
 import { cn } from "cn";
 import { ClientOnly } from "@/components/client-only";
 import { Logo } from "@/components/journal/logo";
@@ -11,36 +12,20 @@ import { isActivePath, NAV_ITEMS } from "./nav";
 import { ThemeToggle } from "./theme-toggle";
 import { UserMenu } from "./user-menu";
 
-/** 頂欄：標誌字（回封面）、頂部分頁、帳本名稱、深淺色、使用者 */
+/**
+ * 頂欄：標誌字（回封面）、頂部分頁、帳本名稱、深淺色、使用者。
+ * 目前分頁要讀網址（usePathname），在動態路由（/days/[date]）預先算靜態外殼時拿不到，
+ * 所以把會讀網址的部分包在 Suspense 裡，外殼先畫沒有標示目前頁的分頁列。
+ */
 export function TopNav() {
-  const pathname = usePathname();
-
   return (
     <header className="mx-auto flex w-full max-w-6xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3 md:px-6">
       <Link href="/cover" aria-label="回到封面" className="shrink-0">
         <Logo />
       </Link>
-      <nav aria-label="主選單" className="hidden flex-1 items-center gap-1 md:flex">
-        {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
-          const active = isActivePath(pathname, href);
-          return (
-            <Link
-              key={href}
-              href={href}
-              aria-current={active ? "page" : undefined}
-              className={cn(
-                "inline-flex h-9 items-center gap-1.5 rounded-full px-4 text-sm transition-all focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/40",
-                active
-                  ? "bg-accent-gradient font-bold shadow-[0_3px_0_var(--accent-shadow)]"
-                  : "font-medium text-foreground/80 hover:bg-card hover:text-foreground",
-              )}
-            >
-              <Icon className="size-4" aria-hidden />
-              {label}
-            </Link>
-          );
-        })}
-      </nav>
+      <Suspense fallback={<NavTabs pathname={null} />}>
+        <ActiveNavTabs />
+      </Suspense>
       <div className="ml-auto flex items-center gap-2">
         <span className="hidden max-w-40 truncate font-hand text-[15px] text-muted-foreground sm:block">
           <ClientOnly fallback={<Skeleton className="h-4 w-20" />}>
@@ -53,6 +38,37 @@ export function TopNav() {
         </ClientOnly>
       </div>
     </header>
+  );
+}
+
+function ActiveNavTabs() {
+  const pathname = usePathname();
+  return <NavTabs pathname={pathname} />;
+}
+
+function NavTabs({ pathname }: { pathname: string | null }) {
+  return (
+    <nav aria-label="主選單" className="hidden flex-1 items-center gap-1 md:flex">
+      {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
+        const active = pathname !== null && isActivePath(pathname, href);
+        return (
+          <Link
+            key={href}
+            href={href}
+            aria-current={active ? "page" : undefined}
+            className={cn(
+              "inline-flex h-9 items-center gap-1.5 rounded-full px-4 text-sm transition-all focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/40",
+              active
+                ? "bg-accent-gradient font-bold shadow-[0_3px_0_var(--accent-shadow)]"
+                : "font-medium text-foreground/80 hover:bg-card hover:text-foreground",
+            )}
+          >
+            <Icon className="size-4" aria-hidden />
+            {label}
+          </Link>
+        );
+      })}
+    </nav>
   );
 }
 

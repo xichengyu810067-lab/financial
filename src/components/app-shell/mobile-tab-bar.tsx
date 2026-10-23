@@ -2,19 +2,35 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { BookOpen, Ellipsis } from "lucide-react";
 import { cn } from "cn";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { isActivePath, MOBILE_PRIMARY_COUNT, NAV_ITEMS } from "./nav";
 
-/** 手機底部四格：今天、本月、交易、更多（其餘分頁與封面收在底部面板） */
+/**
+ * 手機底部四格：今天、本月、交易、更多（其餘分頁與封面收在底部面板）。
+ * 讀網址的部分包在 Suspense，動態路由的靜態外殼先畫沒有標示目前頁的版本。
+ */
 export function MobileTabBar() {
+  return (
+    <Suspense fallback={<TabBar pathname={null} />}>
+      <ActiveTabBar />
+    </Suspense>
+  );
+}
+
+function ActiveTabBar() {
   const pathname = usePathname();
+  return <TabBar pathname={pathname} />;
+}
+
+function TabBar({ pathname }: { pathname: string | null }) {
   const [moreOpen, setMoreOpen] = useState(false);
   const primary = NAV_ITEMS.slice(0, MOBILE_PRIMARY_COUNT);
   const rest = NAV_ITEMS.slice(MOBILE_PRIMARY_COUNT);
-  const restActive = rest.some((item) => isActivePath(pathname, item.href));
+  const isActive = (href: string) => pathname !== null && isActivePath(pathname, href);
+  const restActive = rest.some((item) => isActive(item.href));
 
   const tabClass = (active: boolean) =>
     cn(
@@ -29,7 +45,7 @@ export function MobileTabBar() {
         className="fixed inset-x-0 bottom-0 z-40 grid h-[calc(4rem+env(safe-area-inset-bottom))] grid-cols-4 border-t border-line bg-card px-2 pt-1 pb-[env(safe-area-inset-bottom)] md:hidden"
       >
         {primary.map(({ href, label, icon: Icon }) => {
-          const active = isActivePath(pathname, href);
+          const active = isActive(href);
           return (
             <Link key={href} href={href} aria-current={active ? "page" : undefined} className={tabClass(active)}>
               <Icon className="size-5" aria-hidden />
@@ -50,7 +66,7 @@ export function MobileTabBar() {
           </SheetHeader>
           <div className="grid grid-cols-2 gap-2 px-4">
             {rest.map(({ href, label, icon: Icon }) => {
-              const active = isActivePath(pathname, href);
+              const active = isActive(href);
               return (
                 <Link
                   key={href}
