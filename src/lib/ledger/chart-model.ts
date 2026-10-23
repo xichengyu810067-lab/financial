@@ -1,8 +1,8 @@
-import { aggregateStats, effectiveBudget, OVER_RATIO, type CategoryStat } from "./alerts";
+import { aggregateStats, effectiveBudget, OVER_RATIO, type CategoryStat, type SpendingAlert } from "./alerts";
 import { getColor } from "./colors";
 import type { DailySummaryRow } from "./days";
 import { addDays, daysBetween, shortMonthLabel } from "./period";
-import { round2, type IncomeLine } from "./report-model";
+import { round2, type Activity, type CashFlowActivity, type IncomeLine } from "./report-model";
 
 /**
  * 圖表資料整形（純函式，Vitest）：補齊沒有交易的日子／月份、環圈切片、基準線進度。
@@ -119,6 +119,29 @@ export function netWorthSeries(rows: { month: string; netWorth: number }[], upTo
     .map((r) => ({ month: r.month, label: shortMonthLabel(r.month), netWorth: r.netWorth }));
 }
 
+export interface ActivityPoint {
+  key: Activity;
+  /** "營業"、"投資"、"融資" */
+  label: string;
+  inflow: number;
+  outflow: number;
+  /** 畫在基線下方用的負值 */
+  outflowDown: number;
+  net: number;
+}
+
+/** 現金流量表上方的圖：三類活動各一組流入／流出 */
+export function activitySeries(activities: CashFlowActivity[]): ActivityPoint[] {
+  return activities.map((a) => ({
+    key: a.key,
+    label: a.label.slice(0, 2),
+    inflow: a.inflow,
+    outflow: a.outflow,
+    outflowDown: a.outflow === 0 ? 0 : -a.outflow,
+    net: a.net,
+  }));
+}
+
 /** 1234 → "1.2K"、1500000 → "1.5M"、-800 → "-800" */
 export function compactNumber(value: number): string {
   const abs = Math.abs(value);
@@ -184,4 +207,42 @@ export function baselineRows(stats: CategoryStat[]): BaselineRow[] {
       const rank = (l: BaselineLevel) => (l === "over" ? 0 : l === "habit" ? 1 : 2);
       return rank(a.level) - rank(b.level) || b.spent - a.spent;
     });
+}
+
+export interface WatchRow extends BaselineRow {
+  /** 這個月的紅色（照速度會超過）或橙色（習慣性超支）警示；紅色優先 */
+  alert: SpendingAlert | null;
+  /** 額度 − 已花；沒額度為 null */
+  remaining: number | null;
+}
+
+/** 要注意的原因：已超過 → 照速度會超過 → 習慣性超支 */
+export type WatchReason = "over" | "pace" | "habit";
+
+export function watchReason(row: WatchRow): WatchReason | null {
+  if (row.level === "over") return "over";
+  if (row.alert?.level === "red") return "pace";
+  if (row.level === "habit" || row.alert?.level === "orange") return "habit";
+  return null;
+}
+
+const WATCH_RANK: Record<WatchReason, number> = { over: 0, pace: 1, habit: 2 };
+
+/**
+ * 本月頁版型 B：把類別分成「要注意的」（已超過、照速度會超過、習慣性超支）與「在範圍內的」。
+ * 警示以類別或其子類別的 id 對應；要注意的依原因再依已花金額排序。
+ */
+export function splitWatchRows(rows: BaselineRow[], alerts: SpendingAlert[]): { attention: WatchRow[]; calm: WatchRow[] } {
+  const attention: WatchRow[] = [];
+  const calm: WatchRow[] = [];
+  for (const row of rows) {
+    const members = new Set(row.memberIds);
+    const alert =
+      alerts.find((a) => a.level === "red" && members.has(a.categoryId)) ?? alerts.find((a) => a.level === "orange" && members.has(a.categoryId)) ?? null;
+    const watch: WatchRow = { ...row, alert, remaining: row.baseline === null ? null : round2(row.baseline - row.spent) };
+    if (watchReason(watch) === null) calm.push(watch);
+    else attention.push(watch);
+  }
+  attention.sort((a, b) => WATCH_RANK[watchReason(a)!] - WATCH_RANK[watchReason(b)!] || b.spent - a.spent);
+  return { attention, calm };
 }

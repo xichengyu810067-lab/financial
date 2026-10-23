@@ -13,7 +13,7 @@ interface NetWorthAreaProps {
 /** 淨值走勢：一條 2px 的主題色線，底下一層淡淡的水彩；只有一個系列所以不用圖例 */
 export function NetWorthArea({ points }: NetWorthAreaProps) {
   if (points.length === 0) {
-    return <p className="rounded-xl border border-dashed border-line px-4 py-8 text-center font-hand text-[15px] text-muted-foreground">這一年還沒有資料。</p>;
+    return <p className="rounded-xl border border-dashed border-line px-4 py-8 text-center font-hand text-[15px] text-muted-foreground">這段期間還沒有資料。</p>;
   }
   const first = points[0];
   const last = points[points.length - 1];

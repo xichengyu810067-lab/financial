@@ -4,16 +4,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "cn";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  customPeriod,
-  isValidISODate,
-  periodForQuickOption,
-  periodLabel,
-  previousPeriod,
-  shiftPeriod,
-  type Period,
-  type PeriodPreset,
-} from "@/lib/ledger/period";
+import { customPeriod, isValidISODate, periodContaining, periodLabel, previousPeriod, shiftPeriod, type Period, type PeriodPreset } from "@/lib/ledger/period";
 
 interface PeriodPickerProps {
   period: Period;
@@ -23,19 +14,19 @@ interface PeriodPickerProps {
 }
 
 const PRESETS: { value: PeriodPreset; label: string }[] = [
+  { value: "day", label: "日" },
+  { value: "week", label: "週" },
   { value: "month", label: "月" },
   { value: "quarter", label: "季" },
   { value: "year", label: "年" },
   { value: "custom", label: "自訂" },
 ];
 
-/** 期間選擇器：月／季／年／自訂的分段按鈕 + 依目前長度往前後移 + 自訂起迄日 */
+/** 期間選擇器：日／週／月／季／年／自訂的分段按鈕 + 依目前長度往前後移 + 自訂起迄日；週是週一到週日 */
 export function PeriodPicker({ period, today, onChange }: PeriodPickerProps) {
   const pick = (preset: PeriodPreset) => {
     if (preset === "custom") onChange({ ...period, preset: "custom" });
-    else if (preset === "month") onChange(periodForQuickOption("this-month", today));
-    else if (preset === "quarter") onChange(periodForQuickOption("this-quarter", today));
-    else onChange(periodForQuickOption("this-year", today));
+    else onChange(periodContaining(preset, today));
   };
 
   return (
@@ -51,7 +42,7 @@ export function PeriodPicker({ period, today, onChange }: PeriodPickerProps) {
               aria-checked={active}
               onClick={() => pick(preset.value)}
               className={cn(
-                "h-8 rounded-full px-3.5 text-sm transition-colors",
+                "h-8 rounded-full px-3 text-sm transition-colors sm:px-3.5",
                 active ? "bg-foreground font-bold text-background" : "text-muted-foreground hover:text-foreground",
               )}
             >

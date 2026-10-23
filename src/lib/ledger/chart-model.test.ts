@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import type { CategoryStat } from "./alerts";
-import { baselineRows, compactNumber, dailySeries, donutSlices, monthSeries, netWorthSeries } from "./chart-model";
-import type { IncomeLine } from "./report-model";
+import type { CategoryStat, SpendingAlert } from "./alerts";
+import { activitySeries, baselineRows, compactNumber, dailySeries, donutSlices, monthSeries, netWorthSeries, splitWatchRows, watchReason } from "./chart-model";
+import type { CashFlowActivity, IncomeLine } from "./report-model";
 
 const line = (id: string, name: string, current: number, color: string | null = null, children: IncomeLine[] = []): IncomeLine => ({
   id,
@@ -110,6 +110,50 @@ describe("圖表資料", () => {
   it("基準線進度：當月覆寫優先，並保留原基準線供顯示", () => {
     const rows = baselineRows([stat({ account_id: "shop", name: "購物", monthly_budget: 3000, month_budget: 5000, month_to_date: 3900, month_count: 1 })]);
     expect(rows[0]).toMatchObject({ baseline: 5000, usingBudget: true, categoryBudget: 3000, monthBudget: 5000, level: "ok" });
+  });
+
+  it("版型 B：已超過、照速度會超過、習慣性超支的要注意，其餘在範圍內", () => {
+    const alert = (categoryId: string, level: SpendingAlert["level"]): SpendingAlert => ({
+      level,
+      categoryId,
+      categoryName: categoryId,
+      icon: null,
+      color: null,
+      title: "t",
+      advice: "a",
+      ratio: 1,
+      spent: 0,
+      baseline: null,
+    });
+    const rows = baselineRows([
+      stat({ account_id: "food", name: "飲食", monthly_budget: 7500, month_to_date: 2410, month_count: 3 }),
+      stat({ account_id: "food-lunch", parent_id: "food", name: "午餐", month_to_date: 1200, month_count: 3 }),
+      stat({ account_id: "shop", name: "購物", monthly_budget: 3000, month_to_date: 3900, month_count: 1 }),
+      stat({ account_id: "fun", name: "娛樂", monthly_budget: 3000, month_to_date: 2650, month_count: 4, prev3_avg: 4200, prev3_months: 3 }),
+      stat({ account_id: "move", name: "交通", monthly_budget: 1500 }),
+      stat({ account_id: "misc", name: "其他", month_to_date: 515, month_count: 2, prev3_avg: 900, prev3_months: 2 }),
+    ]);
+    // 子類別午餐的紅色警示要算到父類別飲食上
+    const { attention, calm } = splitWatchRows(rows, [alert("food-lunch", "red"), alert("fun", "orange")]);
+    expect(attention.map((r) => `${r.name}:${watchReason(r)}`)).toEqual(["購物:over", "飲食:pace", "娛樂:habit"]);
+    expect(attention[0].remaining).toBe(-900);
+    expect(attention[1].alert?.level).toBe("red");
+    expect(calm.map((r) => `${r.name}:${r.remaining}`)).toEqual(["其他:385", "交通:1500"]);
+    expect(calm.every((r) => r.alert === null)).toBe(true);
+  });
+
+  it("現金流量三類活動的長條資料，流出畫成負值", () => {
+    const activity = (key: CashFlowActivity["key"], label: string, inflow: number, outflow: number): CashFlowActivity => ({
+      key,
+      label,
+      description: "",
+      lines: [],
+      inflow,
+      outflow,
+      net: inflow - outflow,
+    });
+    const points = activitySeries([activity("operating", "營業活動", 58000, 5335), activity("investing", "投資活動", 0, 0), activity("financing", "融資活動", 0, 10000)]);
+    expect(points.map((p) => `${p.label}:${p.inflow}/${p.outflowDown}/${p.net}`)).toEqual(["營業:58000/-5335/52665", "投資:0/0/0", "融資:0/-10000/-10000"]);
   });
 });
 

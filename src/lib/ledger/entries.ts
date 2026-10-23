@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import type { Json, Tables } from "@/lib/supabase/database.types";
+import { isValidMonth, monthRange } from "./month";
 import { buildLines, type AccountRef, type Line } from "./posting";
 import { queryKeys } from "./queries";
 import type { Account } from "./types";
@@ -19,43 +20,8 @@ export const KIND_LABELS: Record<EntryKind, string> = {
   adjustment: "調整",
 };
 
-// ---------------------------------------------------------------------------
-// 月份工具（YYYY-MM）
-// ---------------------------------------------------------------------------
-
-export function currentMonth(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-}
-
-export function isValidMonth(value: string | null | undefined): value is string {
-  return typeof value === "string" && /^\d{4}-(0[1-9]|1[0-2])$/.test(value);
-}
-
-export function monthRange(month: string): { start: string; end: string } {
-  const [y, m] = month.split("-").map(Number);
-  const lastDay = new Date(y, m, 0).getDate();
-  return { start: `${month}-01`, end: `${month}-${String(lastDay).padStart(2, "0")}` };
-}
-
-export function shiftMonth(month: string, delta: number): string {
-  const [y, m] = month.split("-").map(Number);
-  const d = new Date(y, m - 1 + delta, 1);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-}
-
-export function monthLabel(month: string): string {
-  const [y, m] = month.split("-");
-  return `${y} 年 ${Number(m)} 月`;
-}
-
-const dayFormatter = new Intl.DateTimeFormat("zh-TW", { month: "long", day: "numeric", weekday: "short" });
-
-/** "2026-10-23" → "10月23日 週四" */
-export function dayLabel(dateStr: string): string {
-  const [y, m, d] = dateStr.split("-").map(Number);
-  return dayFormatter.format(new Date(y, m - 1, d));
-}
+// 月份工具搬到 ./month（沒有 "use client"，伺服器端頁面也能用）；這裡保留轉出給既有的瀏覽器端引用
+export { currentMonth, dayLabel, isValidMonth, monthLabel, monthRange, shiftMonth } from "./month";
 
 // ---------------------------------------------------------------------------
 // 查詢

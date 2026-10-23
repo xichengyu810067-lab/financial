@@ -14,7 +14,6 @@ const PROTECTED_PREFIXES = [
   "/days",
   "/month",
   "/months",
-  "/year",
   "/dashboard",
   "/transactions",
   "/accounts",

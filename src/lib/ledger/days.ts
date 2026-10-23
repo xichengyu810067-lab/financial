@@ -28,10 +28,10 @@ function unwrapRows<T>(result: { data: T[] | null; error: { message: string } | 
 }
 
 /** 期間內每一天的收入、支出與筆數（沒交易的日子不會有列） */
-export function useDailySummary(ledgerId: string | undefined, from: string, to: string) {
+export function useDailySummary(ledgerId: string | undefined, from: string, to: string, enabled = true) {
   return useQuery({
     queryKey: dayKeys.daily(ledgerId ?? "", from, to),
-    enabled: Boolean(ledgerId),
+    enabled: Boolean(ledgerId) && enabled,
     placeholderData: keepPreviousData,
     queryFn: async (): Promise<DailySummaryRow[]> => {
       const supabase = createClient();

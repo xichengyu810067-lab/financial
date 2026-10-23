@@ -11,15 +11,18 @@ interface CategoryDonutProps {
   slices: DonutSlice[];
   total: number;
   onSelect: (slice: DonutSlice) => void;
+  /** 環圈中央的小標（例如「本月支出」） */
+  label?: string;
+  emptyText?: string;
 }
 
 /**
  * 支出類別占比：最多六片（尾巴合併成其他），片與片之間留 2px 紙色縫；
  * 顏色是類別自己的顏色，所以旁邊一定有名稱與金額的清單，不靠顏色辨認。
  */
-export function CategoryDonut({ slices, total, onSelect }: CategoryDonutProps) {
+export function CategoryDonut({ slices, total, onSelect, label = "支出", emptyText = "這段期間沒有支出。" }: CategoryDonutProps) {
   if (slices.length === 0) {
-    return <p className="rounded-xl border border-dashed border-line px-4 py-8 text-center font-hand text-[15px] text-muted-foreground">這個月還沒有支出。</p>;
+    return <p className="rounded-xl border border-dashed border-line px-4 py-8 text-center font-hand text-[15px] text-muted-foreground">{emptyText}</p>;
   }
   return (
     <div className="flex flex-wrap items-center gap-5">
@@ -61,7 +64,7 @@ export function CategoryDonut({ slices, total, onSelect }: CategoryDonutProps) {
           </PieChart>
         </ResponsiveContainer>
         <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-[11px] text-muted-foreground">本月支出</span>
+          <span className="text-[11px] text-muted-foreground">{label}</span>
           <span className="text-lg font-bold">{formatTWD(total)}</span>
         </div>
       </div>

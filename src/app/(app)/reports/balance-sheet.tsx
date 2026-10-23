@@ -1,8 +1,13 @@
 "use client";
 
+import { ChartFigure } from "@/components/charts/chart-figure";
+import { NetWorthArea } from "@/components/charts/net-worth-area";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { netWorthSeries } from "@/lib/ledger/chart-model";
+import { useNetWorthByMonth } from "@/lib/ledger/charts";
 import { formatTWD } from "@/lib/ledger/format";
-import { dayBefore, periodLabel, type Period } from "@/lib/ledger/period";
+import { dayBefore, monthPeriod, periodLabel, shiftPeriod, type Period } from "@/lib/ledger/period";
 import { buildBalanceSheet, RETAINED_KEY, round2, type BalanceLine, type BalanceSection } from "@/lib/ledger/report-model";
 import { useBalanceSheet } from "@/lib/ledger/reports";
 import type { Account } from "@/lib/ledger/types";
@@ -36,6 +41,10 @@ export function BalanceSheet({ ledgerId, accounts, period, onDrill }: BalanceShe
   const startDate = dayBefore(period.from);
   const endQuery = useBalanceSheet(ledgerId, period.to);
   const startQuery = useBalanceSheet(ledgerId, startDate);
+  // 上方的走勢圖：截至期末那個月往前共 12 個月底
+  const endMonth = period.to.slice(0, 7);
+  const trendFrom = shiftPeriod(monthPeriod(Number(endMonth.slice(0, 4)), Number(endMonth.slice(5, 7))), -11).from;
+  const trendQuery = useNetWorthByMonth(ledgerId, trendFrom, period.to);
 
   const error = endQuery.error ?? startQuery.error;
   if (error) return <ReportError message={error.message} />;
@@ -141,6 +150,18 @@ export function BalanceSheet({ ledgerId, accounts, period, onDrill }: BalanceShe
 
   return (
     <div className="grid gap-5">
+      {!isEmpty && (
+        <ChartFigure title="淨值一路走來" description={`每個月底的資產減負債，截至 ${shortDate(period.to)} 往前 12 個月。`}>
+          {trendQuery.error ? (
+            <ReportError message={trendQuery.error.message} />
+          ) : trendQuery.data ? (
+            <NetWorthArea points={netWorthSeries(trendQuery.data, endMonth)} />
+          ) : (
+            <Skeleton className="h-44 w-full" />
+          )}
+        </ChartFigure>
+      )}
+
       <StatTiles
         items={[
           { label: "資產", value: sheet.assets.end, tape: "accent", hint: `期初 ${formatTWD(sheet.assets.start)}` },

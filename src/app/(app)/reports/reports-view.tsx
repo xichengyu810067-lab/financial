@@ -74,7 +74,7 @@ export function ReportsView() {
 
   return (
     <>
-      <PageHeader title="報表" description="三張報表會隨每一筆交易即時更新；點任一列可以看到背後的交易。" />
+      <PageHeader title="報表" description="日、週、月、季、年都能看；每張報表上方是圖，點任一列可以看到背後的交易。" />
 
       <div className="grid gap-4">
         <PeriodPicker period={period} today={today} onChange={(next) => navigate(tab, next)} />
@@ -88,7 +88,7 @@ export function ReportsView() {
             ))}
           </TabsList>
           <TabsContent value="income" className={PANEL}>
-            <IncomeStatement {...reportProps} />
+            <IncomeStatement {...reportProps} onChangePeriod={(next) => navigate(tab, next)} />
           </TabsContent>
           <TabsContent value="balance" className={PANEL}>
             <BalanceSheet {...reportProps} />

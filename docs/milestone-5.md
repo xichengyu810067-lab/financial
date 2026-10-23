@@ -140,6 +140,15 @@ PR A 合併後在正式站驗收**不通過**：本月頁太擁擠（四個數�
 - 設定頁「帳本」卡多「每月總支出上限」欄位，留空清除。
 - **已驗證（本機，測試帳本）**：設定頁填 25,000 後，今天這一頁出現「這個月還能花 $19,665，每天可花 $2,809，剩 7 天」，月章節頁總預算列一致；把購物當月額度改成 2,500 → 列變成「本月」徽章與 $3,900 / $2,500 已超過，今天這一頁的警示改寫「比基準線 $2,500 高 60%」；清空後回到類別基準線 $3,000。lint／tsc／test（64）／build（以建置本身結束碼確認）；SQL 情境測試：覆寫只影響該月、月中日期與負數上限被擋、他人看不到。
 
+### PR A2 本月頁重排與報表融合（2026-10-24 實作）
+
+- 本月頁 `month-view.tsx` 重寫：`SpendingHero`（`spending-hero.tsx`）大字「這個月還能花」＋每天可花＋進度列；`CategoryWatch`（`category-watch.tsx`，取代 `budget-section.tsx`）只展開要注意的類別、其餘收合；四個數字、每日長條、環圈都拿掉。`chart-model.ts` 新增 `splitWatchRows` / `watchReason`（Vitest）。
+- 報表：`period.ts` 加 `day` / `week`（`dayPeriod`、`weekPeriod`，週一到週日），`periodLabel`、`shiftPeriod`、`periodFromParams` 跟著支援；`PeriodPicker` 六段。圖表元件搬到 `src/components/charts/`（`daily-bars`、`category-donut`、`monthly-bars`、`net-worth-area`，新增 `activity-bars` 與 `chart-figure`）；損益表上方每天／每月收支長條＋環圈（超過 62 天改每月），資產負債表上方淨值走勢（截至期末往前 12 個月），現金流量表上方三活動流入流出；年的「月度明細」表拿掉。`useDailySummary` 多一個 `enabled` 參數。
+- 移除 `/year`（`proxy.ts` 一併拿掉）；`/budgets` 舊佔位頁改成導向 `/month`。
+- 順手修一個既有錯誤：`/months/[month]` 的 `generateMetadata` 從標了 `"use client"` 的 `entries.ts` 引入 `isValidMonth`，過去月份的網址會伺服器錯誤（本機重現、正式站也會）；月份工具搬到 `src/lib/ledger/month.ts`，`entries.ts` 保留轉出。
+- **已驗證（本機，測試帳本）**：本月頁大字 $19,665、每天可花 $2,809、剩 7 天；要注意的 1 類「購物 已超過 $900」附建議句；「其他 2 類都在範圍內」點開展開娛樂與飲食；把購物當月額度改成 2,500 → 徽章變「已超過 $1,400」、出現「本月」徽章，清空後回到 $3,000；`/months/2026-09` 顯示「這個月剩下 $20,000」。報表：週 = 「2026/10/19 – 10/25」七根長條；日只有環圈；年是每月長條且沒有月度明細；資產負債表上方 12 個月淨值（11 月 $0 → 10 月 $99,965，與表一致）；現金流量表上方三活動長條；`/year` 404。lint／tsc／test（69）／build（以建置本身結束碼確認）通過。
+- 另外發現但**沒有在這個 PR 修**：點右上角使用者選單會整頁掛掉（`DropdownMenuLabel` 用了 Base UI 的 `Menu.GroupLabel`，必須包在 `Menu.Group` 裡），是既有問題。
+
 ## 不在此里程碑
 
 目標之間自動分配存款、預算的年度檢視、Email 提醒（里程碑 6 再議）。

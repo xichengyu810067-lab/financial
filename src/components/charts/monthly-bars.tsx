@@ -8,10 +8,12 @@ import type { MonthPoint } from "@/lib/ledger/chart-model";
 interface MonthlyBarsProps {
   points: MonthPoint[];
   onSelectMonth: (month: string) => void;
+  /** 圖例右側的一句提示（點一個月會發生什麼） */
+  hint?: string;
 }
 
-/** 每個月的收入與支出並排雙長條；點一個月翻到那一章。下方有表格版。 */
-export function MonthlyBars({ points, onSelectMonth }: MonthlyBarsProps) {
+/** 每個月的收入與支出並排雙長條；點一個月交給呼叫端處理。下方有表格版。 */
+export function MonthlyBars({ points, onSelectMonth, hint = "點一個月看那個月" }: MonthlyBarsProps) {
   return (
     <div className="grid gap-2">
       <div className="h-56 w-full" role="img" aria-label="每月收入與支出長條圖，數字見下方表格">
@@ -58,7 +60,7 @@ export function MonthlyBars({ points, onSelectMonth }: MonthlyBarsProps) {
           <span aria-hidden className="inline-block size-2.5 rounded-[2px]" style={{ backgroundColor: CHART.expense }} />
           支出
         </span>
-        <span className="ml-auto">點一個月翻到那一章</span>
+        <span className="ml-auto">{hint}</span>
       </div>
       <details className="text-xs text-muted-foreground">
         <summary className="cursor-pointer underline-offset-4 hover:underline">用表格看</summary>
