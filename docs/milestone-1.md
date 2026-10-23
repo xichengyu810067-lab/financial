@@ -89,6 +89,15 @@ MCP 沒有 Auth 與 SMTP 的設定工具，以下由你操作（我可以提供�
 - SQL 測試（可 rollback）：註冊 trigger 建立帳本與科目、`complete_onboarding`、`set_opening_balance`、父層深度限制、RLS 隔離。
 - 本機 lint／test／build 通過、CI 綠燈、Vercel preview 以內建瀏覽器走完註冊→引導→帳戶流程並截圖。
 
+## 實作備註（2026-10-23 完成）
+
+- **Next 16 Cache Components**：讀取 cookie 的伺服器程式都放在 `<Suspense>` 內；`src/lib/supabase/server.ts` 先 `await connection()` 再建立 client，否則 supabase-js 檢查 session 時呼叫的 `Date.now()` 會被分段渲染視為同步 IO 錯誤（`partialPrefetching` 開啟時）。
+- **TanStack Query 只在瀏覽器端執行**：`src/components/client-only.tsx` 用 `useSyncExternalStore` 讓伺服器與 hydration 階段先出骨架；頂欄的帳本名稱、使用者選單與各頁 view 都包在裡面。原因同上：`useQuery` 在伺服器 render 時會讀 `Date.now()`。
+- **React Compiler 規則**：不能在 render 中把元件存進變數再寫成 JSX（`LedgerIcon` 改用 `createElement`）；不能在 effect 裡同步 setState（表單改成資料載入後才渲染、用 props 初始化 state）。
+- **引導頁在獨立的 `(onboarding)` route group**，不走 `(app)` 的側欄外框，也避免 gate 互相導向。
+- **本機測試帳號**：以 SQL 直接建立並標記信箱已確認，帳密記在 gitignored 的 `.env.local`（`DEV_TEST_EMAIL` / `DEV_TEST_PASSWORD`）。信箱寄送流程（確認信、重設密碼信）需等 Brevo／Supabase 設定完成後才能實測。
+- **已驗證**：未登入導向、登入、引導頁寫入（改名、刪帳戶、期初餘額）、帳戶新增／排序／封存／編輯期初餘額、子類別新增、分頁切換、設定頁改名與起始日同步期初交易日期、登出、註冊表單驗證、忘記密碼頁；SQL 層另有 rollback 測試涵蓋 trigger、RPC、子類別限制與 RLS。
+
 ## 實作順序（同一個 PR，分多個 commit）
 
 1. migration 與 SQL 測試

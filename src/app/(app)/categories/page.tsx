@@ -1,5 +1,14 @@
-import { PlaceholderPage } from "@/components/placeholder-page";
+import type { Metadata } from "next";
+import { ClientOnly } from "@/components/client-only";
+import { Skeleton } from "@/components/ui/skeleton";
+import { CategoriesView } from "./categories-view";
 
-export default function Page() {
-  return <PlaceholderPage title="類別" milestone={1} description="收入與費用類別管理。" />;
+export const metadata: Metadata = { title: "類別" };
+
+export default function CategoriesPage() {
+  return (
+    <ClientOnly fallback={<Skeleton className="h-96 w-full" />}>
+      <CategoriesView />
+    </ClientOnly>
+  );
 }

@@ -4,9 +4,24 @@ import { getSupabaseEnv } from "@/lib/supabase/env";
 
 /**
  * Next.js 16 的 Proxy（舊稱 Middleware）。
- * 目前只負責刷新 Supabase session cookie，讓 Server Component 讀到最新登入狀態；
- * 「未登入導向 /login」等規則在里程碑 1 設計登入流程時再加入。
+ * 1. 刷新 Supabase session cookie，讓 Server Component 讀到最新登入狀態。
+ * 2. 未登入者不得進入應用頁面；已登入者不需要再看登入／註冊頁。
  */
+
+const PROTECTED_PREFIXES = [
+  "/dashboard",
+  "/transactions",
+  "/accounts",
+  "/categories",
+  "/reports",
+  "/budgets",
+  "/settings",
+  "/onboarding",
+  "/reset-password",
+];
+
+const AUTH_PAGES = new Set(["/login", "/signup", "/forgot-password"]);
+
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
   const { url, key } = getSupabaseEnv();
@@ -24,8 +39,28 @@ export async function proxy(request: NextRequest) {
     },
   });
 
-  // 驗證並在需要時刷新 token；回傳值目前不使用
-  await supabase.auth.getClaims();
+  // 驗證並在需要時刷新 token
+  const { data } = await supabase.auth.getClaims();
+  const isLoggedIn = Boolean(data?.claims?.sub);
+
+  const { pathname, search } = request.nextUrl;
+  const isProtected = PROTECTED_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+
+  if (!isLoggedIn && isProtected) {
+    const loginUrl = request.nextUrl.clone();
+    loginUrl.pathname = "/login";
+    loginUrl.search = "";
+    // 重設密碼頁需要帶 recovery session，沒有就回登入頁，不保留 next
+    if (pathname !== "/reset-password") loginUrl.searchParams.set("next", `${pathname}${search}`);
+    return NextResponse.redirect(loginUrl);
+  }
+
+  if (isLoggedIn && (AUTH_PAGES.has(pathname) || pathname === "/")) {
+    const appUrl = request.nextUrl.clone();
+    appUrl.pathname = "/dashboard";
+    appUrl.search = "";
+    return NextResponse.redirect(appUrl);
+  }
 
   return response;
 }
