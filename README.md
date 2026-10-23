@@ -73,8 +73,9 @@ migration SQL 放在 `supabase/migrations/`，檔名與 Supabase 上記錄的版
 
 ## 部署
 
+- **正式網址**：https://financial-xicheng.vercel.app
 - **Supabase 專案**：`financial`（ref `marmxajzwymmuoakmgrx`，東京區）
-- **Vercel**：連結本 repo，push `main` 即部署正式環境、PR 產生 preview
+- **Vercel**：專案 `financial`（團隊 `xicheng`）連結本 repo，push `main` 即部署正式環境、PR 產生 preview（preview 需 Vercel 登入才能看）
 
 ### 登入功能上線前需要在 Supabase Dashboard 手動設定（里程碑 1）
 
