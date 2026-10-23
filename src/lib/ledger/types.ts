@@ -19,6 +19,7 @@ export const SUBTYPES: { value: string; label: string; type: "asset" | "liabilit
   { value: "cash", label: "現金", type: "asset" },
   { value: "bank", label: "銀行", type: "asset" },
   { value: "ewallet", label: "電子支付", type: "asset" },
+  { value: "savings", label: "儲蓄", type: "asset" },
   { value: "investment", label: "投資", type: "asset" },
   { value: "other_asset", label: "其他資產", type: "asset" },
   { value: "credit_card", label: "信用卡", type: "liability" },

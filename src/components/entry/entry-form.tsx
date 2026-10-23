@@ -6,11 +6,14 @@ import { toast } from "sonner";
 import { cn } from "cn";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { Field, FormError } from "@/components/form-field";
+import { useFeedback } from "@/components/journal/animations/feedback-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { evaluateAmount } from "@/lib/ledger/amount-expr";
+import { useCategoryStats } from "@/lib/ledger/days";
 import { linesForEntry, useDeleteEntries, useSaveEntry, type Entry, type SimpleKind } from "@/lib/ledger/entries";
 import { translateDbError } from "@/lib/ledger/errors";
+import { feedbackForSave } from "@/lib/ledger/feedback";
 import { todayISO, yesterdayISO } from "@/lib/ledger/format";
 import type { Line } from "@/lib/ledger/posting";
 import { readLastAccounts, writeLastAccounts } from "@/lib/ledger/preferences";
@@ -78,6 +81,9 @@ export function EntryForm({ ledger, accounts, balances, mode, entry, onDone }: E
   const amountRef = useRef<HTMLInputElement>(null);
   const save = useSaveEntry();
   const remove = useDeleteEntries();
+  const feedback = useFeedback();
+  // 存檔前就抓好的類別統計，用來決定這筆要播哪種動畫（超支要立刻提醒）
+  const { data: categoryStats } = useCategoryStats(ledger.id, todayISO());
 
   const accountsById = new Map(accounts.map((a) => [a.id, a]));
   const nameOf = (id: string) => accountsById.get(id)?.name ?? "？";
@@ -172,6 +178,18 @@ export function EntryForm({ ledger, accounts, balances, mode, entry, onDone }: E
             : { transferFrom: form.fromAccountId, transferTo: form.toAccountId },
       );
       toast.success(mode === "edit" ? "已更新交易" : "已記一筆");
+      feedback.play(
+        feedbackForSave({
+          kind: form.kind,
+          amount: amountResult.value,
+          date: form.date,
+          today: todayISO(),
+          category: form.categoryId ? accountsById.get(form.categoryId) : null,
+          toAccount: form.toAccountId ? accountsById.get(form.toAccountId) : null,
+          stats: categoryStats,
+          previous: mode === "edit" && entry ? { amount: Number(entry.amount), date: entry.entry_date, categoryId: entry.category_id } : null,
+        }),
+      );
       if (andNew) {
         setForm((f) => ({ ...f, amount: "", categoryId: "", memo: "" }));
         setSubmitted(false);

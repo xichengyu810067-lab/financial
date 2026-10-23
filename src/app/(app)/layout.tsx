@@ -4,6 +4,7 @@ import { AddEntryButton } from "@/components/app-shell/add-entry-button";
 import { MobileTabBar } from "@/components/app-shell/mobile-tab-bar";
 import { TopNav } from "@/components/app-shell/top-nav";
 import { EntrySheetProvider } from "@/components/entry/entry-sheet-provider";
+import { FeedbackProvider } from "@/components/journal/animations/feedback-provider";
 import { PaperPage } from "@/components/journal/paper-page";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getProfile, requireUser } from "@/lib/auth/dal";
@@ -15,8 +16,9 @@ import { getProfile, requireUser } from "@/lib/auth/dal";
  */
 export default function AppLayout({ children }: { children: ReactNode }) {
   return (
-    <EntrySheetProvider>
-      <div className="paper-dots flex min-h-full flex-1 flex-col">
+    <FeedbackProvider>
+      <EntrySheetProvider>
+        <div className="paper-dots flex min-h-full flex-1 flex-col">
         <TopNav />
         <main className="mx-auto w-full max-w-6xl flex-1 px-3 pb-32 md:px-6 md:pb-14">
           <PaperPage>
@@ -26,9 +28,10 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           </PaperPage>
         </main>
         <MobileTabBar />
-      </div>
-      <AddEntryButton />
-    </EntrySheetProvider>
+        </div>
+        <AddEntryButton />
+      </EntrySheetProvider>
+    </FeedbackProvider>
   );
 }
 

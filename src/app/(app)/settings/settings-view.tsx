@@ -128,7 +128,7 @@ function SettingsForm({ ledger, profile }: { ledger: Ledger; profile: Profile & 
           </form>
         </Card>
 
-        <AppearanceCard />
+        <AppearanceCard profile={profile} />
 
         <Card>
           <CardHeader>
@@ -229,10 +229,17 @@ function CoverCard({ ledger, slogan }: { ledger: Ledger; slogan: string | null }
   );
 }
 
-/** 外觀：深淺色與主題色貼紙。設定存在這台裝置的瀏覽器。 */
-function AppearanceCard() {
+/** 外觀：深淺色與主題色貼紙存在這台裝置；記帳動畫開關存在帳號。 */
+function AppearanceCard({ profile }: { profile: Profile }) {
   const { theme, setTheme } = useTheme();
   const { accent, setAccent } = useAccent();
+  const updateProfile = useUpdateProfile();
+  const animationsOn = profile.animations_enabled;
+  const setAnimations = (enabled: boolean) =>
+    updateProfile.mutate(
+      { id: profile.id, animations_enabled: enabled },
+      { onSuccess: () => toast.success(enabled ? "記帳後會播放動畫" : "已關閉記帳動畫"), onError: (err) => toast.error(translateDbError(err)) },
+    );
 
   const modes = [
     { value: "light", label: "淺色" },
@@ -244,9 +251,34 @@ function AppearanceCard() {
     <Card>
       <CardHeader>
         <CardTitle>外觀</CardTitle>
-        <CardDescription>主題色會套到標誌字、主要按鈕與目前分頁；這些設定存在這台裝置。</CardDescription>
+        <CardDescription>主題色會套到標誌字、主要按鈕與目前分頁；深淺色與主題色存在這台裝置，記帳動畫開關存在帳號。</CardDescription>
       </CardHeader>
       <CardContent className="grid gap-5 pt-4">
+        <div className="grid gap-2">
+          <span className="text-sm font-bold text-muted-foreground">記帳後的動畫</span>
+          <div className="inline-flex w-fit gap-1 rounded-full bg-muted p-1" role="radiogroup" aria-label="記帳後的動畫">
+            {[
+              { value: true, label: "播放" },
+              { value: false, label: "關閉" },
+            ].map((option) => (
+              <button
+                key={String(option.value)}
+                type="button"
+                role="radio"
+                aria-checked={animationsOn === option.value}
+                disabled={updateProfile.isPending}
+                onClick={() => animationsOn !== option.value && setAnimations(option.value)}
+                className={cn(
+                  "rounded-full px-4 py-1.5 text-sm transition-colors",
+                  animationsOn === option.value ? "bg-card font-bold shadow-paper" : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground">存錢時硬幣掉進撲滿、一般支出蓋「已記」章、花過頭時紙鈔飛走；每段不到一秒半。系統設定「減少動態」時只留靜態印章；超支的提醒不受此開關影響。</p>
+        </div>
         <div className="grid gap-2">
           <span className="text-sm font-bold text-muted-foreground">深淺色</span>
           <div className="inline-flex w-fit gap-1 rounded-full bg-muted p-1" role="radiogroup" aria-label="深淺色">
