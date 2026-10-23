@@ -155,6 +155,9 @@
   --income: #1f8a5b;
   --expense: #d4552f;
   --warning: #d97706;
+  /* 圖表用的收入／支出色：經過色盲與對比檢查，深色模式另有一組 */
+  --chart-income: #1f8a5b;
+  --chart-expense: #d4552f;
   --line: #e6dccb;
   --paper: #fbf6ec;
   --paper-line: rgba(43, 36, 32, 0.06);
@@ -207,6 +210,8 @@
   --income: #7fd1a6;
   --expense: #ff9a7a;
   --warning: #f5b14d;
+  --chart-income: #3f9b70;
+  --chart-expense: #e06a47;
   --line: #3f343b;
   --paper: #27202a;
   --paper-line: rgba(255, 255, 255, 0.05);

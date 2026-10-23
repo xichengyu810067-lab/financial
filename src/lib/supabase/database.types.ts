@@ -476,6 +476,13 @@ export type Database = {
         Args: { p_account_id: string; p_direction: string }
         Returns: undefined
       }
+      net_worth_by_month: {
+        Args: { p_from: string; p_ledger: string; p_to: string }
+        Returns: {
+          month: string
+          net_worth: number
+        }[]
+      }
       report_balance_sheet: {
         Args: { p_as_of: string; p_ledger: string }
         Returns: {
