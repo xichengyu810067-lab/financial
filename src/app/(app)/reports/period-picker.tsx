@@ -52,7 +52,7 @@ export function PeriodPicker({ period, today, onChange }: PeriodPickerProps) {
         <Button variant="outline" size="icon-sm" aria-label="上一期" onClick={() => onChange(shiftPeriod(period, -1))}>
           <ChevronLeft className="size-4" aria-hidden />
         </Button>
-        <span className="inline-block min-w-40 rounded-[6px] bg-highlight px-3 py-1 text-center font-hand text-[17px] text-accent-foreground">
+        <span className="inline-block min-w-40 px-3 py-1 text-center font-hand text-[18px] font-bold">
           {periodLabel(period)}
         </span>
         <Button variant="outline" size="icon-sm" aria-label="下一期" onClick={() => onChange(shiftPeriod(period, 1))}>

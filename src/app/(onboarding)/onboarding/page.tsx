@@ -19,7 +19,7 @@ export default function OnboardingPage() {
 async function OnboardingGate() {
   const user = await requireUser();
   const profile = await getProfile(user.id);
-  if (profile?.onboarded_at) redirect("/dashboard");
+  if (profile?.onboarded_at) redirect("/today");
   return (
     <ClientOnly fallback={<Skeleton className="h-96 w-full" />}>
       <OnboardingForm />

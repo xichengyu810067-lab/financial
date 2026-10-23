@@ -32,7 +32,7 @@ async function getOrigin(): Promise<string> {
 }
 
 /** 只允許站內相對路徑，避免開放式重導向 */
-export async function safeNext(value: unknown, fallback = "/dashboard"): Promise<string> {
+export async function safeNext(value: unknown, fallback = "/cover"): Promise<string> {
   if (typeof value === "string" && value.startsWith("/") && !value.startsWith("//")) return value;
   return fallback;
 }
@@ -132,5 +132,5 @@ export async function updatePassword(_prev: AuthState, formData: FormData): Prom
   const { error } = await supabase.auth.updateUser({ password: parsed.data.password });
   if (error) return { error: translateAuthError(error) };
 
-  redirect("/dashboard?message=password-updated");
+  redirect("/today?message=password-updated");
 }

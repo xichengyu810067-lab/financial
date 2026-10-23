@@ -6,7 +6,7 @@ import { useTheme } from "next-themes";
 import { toast } from "sonner";
 import { cn } from "cn";
 import { Field } from "@/components/form-field";
-import { WashiTape } from "@/components/journal/washi-tape";
+import { NotebookCover } from "@/components/journal/notebook-cover";
 import { PageHeader } from "@/components/page-header";
 import { useAccent } from "@/components/theme-provider";
 import { Button } from "@/components/ui/button";
@@ -14,7 +14,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { signOut } from "@/lib/auth/actions";
-import { ACCENTS } from "@/lib/brand";
+import { ACCENTS, COVER_COLORS, COVER_MATERIALS, coverColorOf, coverMaterialOf } from "@/lib/brand";
 import { translateDbError } from "@/lib/ledger/errors";
 import { useLedger, useProfile, useUpdateLedger, useUpdateProfile } from "@/lib/ledger/queries";
 import type { Ledger, Profile } from "@/lib/ledger/types";
@@ -27,8 +27,8 @@ export function SettingsView() {
     return (
       <div className="grid gap-4">
         <Skeleton className="h-8 w-32" />
-        <Skeleton className="h-48 w-full rounded-[22px]" />
-        <Skeleton className="h-32 w-full rounded-[22px]" />
+        <Skeleton className="h-48 w-full rounded-[18px]" />
+        <Skeleton className="h-32 w-full rounded-[18px]" />
       </div>
     );
   }
@@ -80,7 +80,6 @@ function SettingsForm({ ledger, profile }: { ledger: Ledger; profile: Profile & 
       <PageHeader title="設定" description="帳本、個人資料與外觀。" />
       <div className="grid gap-6">
         <Card>
-          <WashiTape tone="accent" />
           <form onSubmit={saveLedger}>
             <CardHeader>
               <CardTitle>帳本</CardTitle>
@@ -102,8 +101,9 @@ function SettingsForm({ ledger, profile }: { ledger: Ledger; profile: Profile & 
           </form>
         </Card>
 
+        <CoverCard ledger={ledger} slogan={slogan.trim() || profile.slogan} />
+
         <Card>
-          <WashiTape tone="sun" />
           <form onSubmit={saveProfile}>
             <CardHeader>
               <CardTitle>個人資料</CardTitle>
@@ -147,6 +147,88 @@ function SettingsForm({ ledger, profile }: { ledger: Ledger; profile: Profile & 
   );
 }
 
+/** 封面：材質與顏色，點一下就存到帳本，封面頁會跟著換 */
+function CoverCard({ ledger, slogan }: { ledger: Ledger; slogan: string | null }) {
+  const updateLedger = useUpdateLedger();
+  const material = coverMaterialOf(ledger.cover_material);
+  const color = coverColorOf(ledger.cover_color);
+
+  const save = (patch: { cover_material?: string; cover_color?: string }) =>
+    updateLedger.mutate({ id: ledger.id, ...patch }, { onError: (err) => toast.error(translateDbError(err)) });
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>封面</CardTitle>
+        <CardDescription>點一下就套用；封面上的名稱與標語來自帳本名稱與小標語。</CardDescription>
+      </CardHeader>
+      <CardContent className="grid gap-6 pt-4 md:grid-cols-[auto_1fr] md:items-center">
+        <NotebookCover name={ledger.name} slogan={slogan} material={material} color={color.id} size="md" className="mx-auto" />
+        <div className="grid gap-5">
+          <div className="grid gap-2">
+            <span className="text-sm font-bold text-muted-foreground">材質</span>
+            <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="封面材質">
+              {COVER_MATERIALS.map((m) => {
+                const selected = m.id === material;
+                return (
+                  <button
+                    key={m.id}
+                    type="button"
+                    role="radio"
+                    aria-checked={selected}
+                    title={m.description}
+                    onClick={() => save({ cover_material: m.id })}
+                    className={cn(
+                      "inline-flex items-center gap-2 rounded-full border bg-card py-1.5 pr-3.5 pl-1.5 text-sm transition-colors",
+                      selected ? "border-foreground font-bold" : "border-line text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    <span aria-hidden className={cn("size-6 rounded-full", `cover-${m.id}`)} style={{ backgroundColor: color.hex }} />
+                    {m.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <div className="grid gap-2">
+            <span className="text-sm font-bold text-muted-foreground">顏色</span>
+            <div className="flex flex-wrap gap-3" role="radiogroup" aria-label="封面顏色">
+              {COVER_COLORS.map((c) => {
+                const selected = c.id === color.id;
+                return (
+                  <button
+                    key={c.id}
+                    type="button"
+                    role="radio"
+                    aria-checked={selected}
+                    aria-label={c.label}
+                    title={c.label}
+                    onClick={() => save({ cover_color: c.id })}
+                    className={cn(
+                      "relative size-11 rounded-full border-[3px] transition-transform hover:scale-105",
+                      selected ? "border-foreground" : "border-card shadow-[0_0_0_1px_var(--line)]",
+                    )}
+                    style={{ backgroundColor: c.hex }}
+                  >
+                    {selected && (
+                      <span className="absolute inset-0 flex items-center justify-center" style={{ color: c.ink }}>
+                        <Check className="size-5" aria-hidden strokeWidth={3} />
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground" aria-live="polite">
+            {updateLedger.isPending ? "儲存中…" : "翻書動畫只在進入帳本時播一次；系統設定「減少動態」時直接進入。"}
+          </p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 /** 外觀：深淺色與主題色貼紙。設定存在這台裝置的瀏覽器。 */
 function AppearanceCard() {
   const { theme, setTheme } = useTheme();
@@ -160,10 +242,9 @@ function AppearanceCard() {
 
   return (
     <Card>
-      <WashiTape tone="mint" />
       <CardHeader>
         <CardTitle>外觀</CardTitle>
-        <CardDescription>主題色會套到標誌字、紙膠帶、按鈕與重點；這些設定存在這台裝置。</CardDescription>
+        <CardDescription>主題色會套到標誌字、主要按鈕與目前分頁；這些設定存在這台裝置。</CardDescription>
       </CardHeader>
       <CardContent className="grid gap-5 pt-4">
         <div className="grid gap-2">

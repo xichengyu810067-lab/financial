@@ -3,10 +3,9 @@
 import { ArrowLeftRight, Copy, EllipsisVertical, Pencil, Trash } from "lucide-react";
 import { cn } from "cn";
 import { AccountIcon } from "@/components/account-icon";
-import { Highlight } from "@/components/journal/highlight";
-import { ReceiptCard, ReceiptList } from "@/components/journal/receipt-card";
+import { ReceiptList } from "@/components/journal/receipt-card";
 import { Button } from "@/components/ui/button";
-import { CardContent } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenu,
@@ -53,15 +52,15 @@ interface EntryListProps {
   onDelete: (entry: Entry) => void;
 }
 
-/** 每一天一張收據：螢光筆日期、虛線分隔、兩側打孔 */
+/** 每一天一張卡：手寫日期、虛線分隔的交易列 */
 export function EntryList({ groups, accountsById, selectMode, selected, onToggle, onEdit, onCopy, onDelete }: EntryListProps) {
   return (
-    <div className="grid gap-5">
-      {groups.map((group, index) => (
-        <ReceiptCard key={group.date} size="sm" notchBottom={28} aria-label={dayLabel(group.date)}>
+    <div className="grid gap-4">
+      {groups.map((group) => (
+        <Card key={group.date} size="sm" aria-label={dayLabel(group.date)}>
           <CardContent className="grid gap-2">
             <div className="flex items-baseline justify-between gap-3">
-              <Highlight tilt={index % 2 === 0 ? -1 : 1}>{dayLabel(group.date)}</Highlight>
+              <span className="font-hand text-[15px] font-bold">{dayLabel(group.date)}</span>
               <span className="text-xs text-muted-foreground tabular-nums">
                 {group.expense > 0 && <span>支出 {formatTWD(group.expense)}</span>}
                 {group.expense > 0 && group.income > 0 && <span className="mx-1">・</span>}
@@ -84,7 +83,7 @@ export function EntryList({ groups, accountsById, selectMode, selected, onToggle
               ))}
             </ReceiptList>
           </CardContent>
-        </ReceiptCard>
+        </Card>
       ))}
     </div>
   );

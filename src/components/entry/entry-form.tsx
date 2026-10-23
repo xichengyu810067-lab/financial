@@ -216,7 +216,7 @@ export function EntryForm({ ledger, accounts, balances, mode, entry, onDone }: E
             onClick={() => changeKind(k.value)}
             className={cn(
               "rounded-full px-3 py-2 text-sm font-bold transition-colors",
-              form.kind === k.value ? "bg-accent-gradient" : "text-muted-foreground hover:text-foreground",
+              form.kind === k.value ? "bg-foreground text-background shadow-paper" : "text-muted-foreground hover:text-foreground",
             )}
           >
             {k.label}

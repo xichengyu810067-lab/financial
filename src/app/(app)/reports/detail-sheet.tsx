@@ -5,7 +5,6 @@ import { ArrowLeftRight, Flag } from "lucide-react";
 import { cn } from "cn";
 import { AccountIcon } from "@/components/account-icon";
 import { useEntrySheet } from "@/components/entry/entry-sheet-provider";
-import { Highlight } from "@/components/journal/highlight";
 import { ReceiptList } from "@/components/journal/receipt-card";
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -74,9 +73,9 @@ export function DetailSheet({ request, open, onClose, ledgerId, accounts }: Deta
             </p>
           ) : (
             <div className="grid gap-4">
-              {groups.map((group, index) => (
+              {groups.map((group) => (
                 <section key={group.date} aria-label={dayLabel(group.date)}>
-                  <Highlight tilt={index % 2 === 0 ? -1 : 1}>{dayLabel(group.date)}</Highlight>
+                  <span className="font-hand text-[15px] font-bold">{dayLabel(group.date)}</span>
                   <ReceiptList className="mt-2">
                     {group.entries.map((entry) => (
                       <DetailRow key={entry.id} entry={entry} accountsById={accountsById} onEdit={() => openEdit(entry)} />

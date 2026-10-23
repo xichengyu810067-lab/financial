@@ -1,14 +1,6 @@
-import type { Metadata } from "next";
-import { ClientOnly } from "@/components/client-only";
-import { Skeleton } from "@/components/ui/skeleton";
-import { DashboardView } from "./dashboard-view";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = { title: "儀表板" };
-
+/** 舊網址：儀表板改成「今天這一頁」 */
 export default function DashboardPage() {
-  return (
-    <ClientOnly fallback={<Skeleton className="h-96 w-full rounded-[22px]" />}>
-      <DashboardView />
-    </ClientOnly>
-  );
+  redirect("/today");
 }

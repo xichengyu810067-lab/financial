@@ -4,9 +4,7 @@ import type { ReactNode } from "react";
 import { Check, ChevronDown, ChevronRight, TriangleAlert } from "lucide-react";
 import { cn } from "cn";
 import { AccountIcon } from "@/components/account-icon";
-import { Highlight } from "@/components/journal/highlight";
 import { Stamp } from "@/components/journal/stamp";
-import { WashiTape } from "@/components/journal/washi-tape";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatPercent, formatSignedTWD, formatTWD } from "@/lib/ledger/format";
@@ -47,16 +45,16 @@ export function ReportTable({ columns, caption, children }: { columns: ReportCol
   );
 }
 
-/** 區段標題（收入／費用／資產…）：螢光筆標籤 + 說明 */
+/** 區段標題（收入／費用／資產…）：粗體小字 + 一條細線 */
 export function SectionRow({ label, description, colSpan }: { label: string; description?: string; colSpan: number }) {
   return (
     <tr>
-      <td colSpan={colSpan} className="px-2 pt-5 pb-1.5">
-        <div className="flex flex-wrap items-baseline gap-2">
-          <Highlight tilt={-1}>{label}</Highlight>
-          {description && <span className="text-xs text-muted-foreground">{description}</span>}
+      <th scope="rowgroup" colSpan={colSpan} className="px-2 pt-5 pb-1 text-left">
+        <div className="flex flex-wrap items-baseline gap-2 border-b border-foreground pb-1">
+          <span className="text-xs font-bold tracking-[0.14em] text-muted-foreground">{label}</span>
+          {description && <span className="text-xs font-normal text-muted-foreground">{description}</span>}
         </div>
-      </td>
+      </th>
     </tr>
   );
 }
@@ -189,8 +187,19 @@ export function DeltaCell({
   );
 }
 
+/** 佔比：數字旁一條細比例條，一眼看出大項 */
 export function PercentCell({ value, hideOnMobile }: { value: number | null; hideOnMobile?: boolean }) {
-  return <td className={cn(cell("right", hideOnMobile), "text-muted-foreground")}>{formatPercent(value)}</td>;
+  const width = value === null ? 0 : Math.max(0, Math.min(100, value));
+  return (
+    <td className={cn(cell("right", hideOnMobile), "text-muted-foreground")}>
+      <span className="inline-flex items-center justify-end gap-2">
+        <span aria-hidden className="inline-block h-1.5 w-14 overflow-hidden rounded-full bg-muted">
+          <span className="block h-full rounded-full bg-foreground/50" style={{ width: `${width}%` }} />
+        </span>
+        <span className="w-12 text-right">{formatPercent(value)}</span>
+      </span>
+    </td>
+  );
 }
 
 export function EmptyCell({ hideOnMobile }: { hideOnMobile?: boolean }) {
@@ -207,7 +216,7 @@ export function TotalRow({ label, emphasis, children }: { label: string; emphasi
   );
 }
 
-/** 檢核列：差額為 0 蓋「平衡」章，否則顯示警告與差額 */
+/** 檢核列：差額為 0 時一行淡綠加小印章，否則紅色顯示差額 */
 export function CheckRow({ label, difference, colSpan }: { label: string; difference: number; colSpan: number }) {
   const ok = isZero(difference);
   return (
@@ -216,16 +225,16 @@ export function CheckRow({ label, difference, colSpan }: { label: string; differ
         <div
           role="status"
           className={cn(
-            "flex items-center justify-between gap-3 rounded-xl border border-dashed px-3 py-2 text-sm",
-            ok ? "border-line" : "border-expense/60 bg-expense/5 text-expense",
+            "flex items-center justify-between gap-3 rounded-xl px-3 py-2 text-sm",
+            ok ? "bg-income/10 text-income" : "bg-expense/10 text-expense",
           )}
         >
           <span className="inline-flex items-center gap-2">
-            {ok ? <Check className="size-4 text-income" aria-hidden /> : <TriangleAlert className="size-4" aria-hidden />}
+            {ok ? <Check className="size-4" aria-hidden strokeWidth={2.5} /> : <TriangleAlert className="size-4" aria-hidden />}
             {label}
           </span>
           {ok ? (
-            <Stamp size="sm" className="-mr-1">
+            <Stamp size="sm" className="-mr-1 border-income text-income">
               平衡
             </Stamp>
           ) : (
@@ -242,24 +251,29 @@ export interface StatTile {
   value: number;
   hint?: string;
   tone?: Tone;
+  /** 卡片上緣那條線的顏色：accent = 主題色、mint = 收入綠、sun = 警示橙 */
   tape?: "accent" | "mint" | "sun";
   stamp?: string;
 }
 
-/** 報表上方的三張摘要卡 */
+const TAPE_CLASS: Record<NonNullable<StatTile["tape"]>, string> = {
+  accent: "border-t-primary",
+  mint: "border-t-income",
+  sun: "border-t-warning",
+};
+
+/** 報表上方的三張摘要卡：細色線在上緣，重點卡蓋一個小印章 */
 export function StatTiles({ items }: { items: StatTile[] }) {
   return (
     <div className="grid gap-3 sm:grid-cols-3">
       {items.map((item) => (
-        <Card key={item.label} size="sm">
-          {item.stamp ? (
+        <Card key={item.label} size="sm" className={cn("border-t-[3px]", item.stamp ? "border-t-foreground" : TAPE_CLASS[item.tape ?? "accent"])}>
+          {item.stamp && (
             <Stamp size="sm" className="absolute top-2 right-3">
               {item.stamp}
             </Stamp>
-          ) : (
-            <WashiTape tone={item.tape ?? "accent"} />
           )}
-          <CardContent className="grid gap-0.5">
+          <CardContent className={cn("grid gap-0.5", item.stamp && "pr-14")}>
             <span className="text-xs text-muted-foreground">{item.label}</span>
             <span className={cn("truncate text-xl font-bold tabular-nums", TONE_CLASS[item.tone ?? "none"])}>{formatTWD(item.value)}</span>
             {item.hint && <span className="text-xs text-muted-foreground">{item.hint}</span>}
@@ -274,9 +288,9 @@ export function ReportSkeleton() {
   return (
     <div className="grid gap-4">
       <div className="grid gap-3 sm:grid-cols-3">
-        <Skeleton className="h-20 rounded-[22px]" />
-        <Skeleton className="h-20 rounded-[22px]" />
-        <Skeleton className="h-20 rounded-[22px]" />
+        <Skeleton className="h-20 rounded-[18px]" />
+        <Skeleton className="h-20 rounded-[18px]" />
+        <Skeleton className="h-20 rounded-[18px]" />
       </div>
       <Skeleton className="h-64 w-full" />
     </div>
