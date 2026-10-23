@@ -26,3 +26,17 @@ export function yesterdayISO(): string {
   d.setDate(d.getDate() - 1);
   return toISODate(d);
 }
+
+/** 帶正負號的金額：+$1,200、−$300；0 不加符號 */
+export function formatSignedTWD(amount: number): string {
+  if (Math.abs(amount) < 0.005) return formatTWD(0);
+  return (amount > 0 ? "+" : "−") + formatTWD(Math.abs(amount));
+}
+
+/** 百分比取到小數一位；null（分母為 0）顯示「—」。signed 時加正負號。 */
+export function formatPercent(value: number | null, signed = false): string {
+  if (value === null || !Number.isFinite(value)) return "—";
+  const text = `${Math.abs(value).toFixed(1)}%`;
+  if (!signed) return `${value < 0 ? "−" : ""}${text}`;
+  return value > 0.05 ? `+${text}` : value < -0.05 ? `−${text}` : text;
+}

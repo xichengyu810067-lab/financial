@@ -151,6 +151,7 @@ async function invalidateAfterWrite(queryClient: ReturnType<typeof useQueryClien
     queryClient.invalidateQueries({ queryKey: entryKeys.all(ledgerId) }),
     queryClient.invalidateQueries({ queryKey: queryKeys.balances(ledgerId) }),
     queryClient.invalidateQueries({ queryKey: queryKeys.openings(ledgerId) }),
+    queryClient.invalidateQueries({ queryKey: queryKeys.reports(ledgerId) }),
   ]);
 }
 
