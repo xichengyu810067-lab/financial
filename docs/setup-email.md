@@ -26,12 +26,12 @@
 ### 3. 建立 SMTP key
 1. 點右上角帳號名稱 → **SMTP & API**。
 2. 切到 **SMTP** 分頁，點 **Generate a new SMTP key**，名稱填 `supabase`。
-3. 畫面會顯示一次性的 SMTP key（一長串），**立刻複製存好**，關掉後就看不到了。
-4. 同一頁會顯示連線資訊，記下：
+3. 畫面會顯示一次性的 SMTP key（開頭是 `xsmtpsib-` 的一長串），**立刻複製存好**，關掉後就看不到了。
+4. 同一頁上方會顯示連線資訊，**四個值都從這一頁照抄**：
    - SMTP Server：`smtp-relay.brevo.com`
    - Port：`587`
-   - Login：你的 Brevo 帳號 Email
-   - Password：剛才產生的 SMTP key
+   - **Login**：這一頁顯示的「Login」值。新版 Brevo 帳號是一串專用登入名，長得像 `9a1b2c3d4e@smtp-brevo.com`，**不是**你註冊 Brevo 用的 Email；舊帳號才會直接顯示你的 Email。以畫面顯示的為準。
+   - Password：剛才產生的 SMTP key（`xsmtpsib-…`），**不是** Brevo 的登入密碼，也不是 API key（`xkeysib-…`）。
 
 ---
 
@@ -48,9 +48,9 @@
    - **Sender name**：`財報記帳平台`
    - **Host**：`smtp-relay.brevo.com`
    - **Port number**：`587`
-   - **Username**：你的 Brevo 帳號 Email
-   - **Password**：SMTP key
-4. 點 **Save**。
+   - **Username**：Brevo SMTP 頁面顯示的「Login」值（新版帳號是 `…@smtp-brevo.com`，見第 3 步）
+   - **Password**：SMTP key（`xsmtpsib-…`）
+4. 點 **Save**。前後不要有空白；貼上後可以把游標移到欄位最後確認沒有多餘字元。
 
 ### 5. 設定網址（讓確認信的連結導回網站）
 1. Authentication → **URL Configuration**。
@@ -99,6 +99,10 @@ Authentication → **Rate Limits**：啟用自訂 SMTP 後，Supabase 預設每�
 1. 網站上線後到 `/signup` 用一個你收得到信的信箱註冊。
 2. 一分鐘內應收到「確認你的財報記帳平台帳號」的信，寄件者顯示「財報記帳平台」。
 3. 點信中連結，應該回到網站並進入引導頁。
+
+**註冊時顯示「確認信寄送失敗」或「發生錯誤」**：代表 Supabase 連 Brevo 寄信時被拒絕。到 Supabase → **Logs** → **Auth** 可看到原因，常見的是：
+- `535 5.7.8 Authentication failed`：Username 或 Password 錯。回到 Brevo 的 SMTP & API 頁面，Username 要填那裡顯示的「Login」值（新版帳號是 `…@smtp-brevo.com`，不是你的 Email），Password 要是 `xsmtpsib-` 開頭的 SMTP key；必要時重新產生一把 key 再貼一次。
+- `Sender address rejected` 或 `not verified`：Sender email 沒有在 Brevo 驗證。
 
 **收不到信時依序檢查**：
 - Brevo → Senders：寄件信箱是否已驗證。

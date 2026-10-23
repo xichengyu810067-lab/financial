@@ -3,6 +3,8 @@ export function translateAuthError(error: { message: string; code?: string }): s
   const code = error.code ?? "";
   const msg = error.message.toLowerCase();
 
+  // SMTP 設定錯誤時 Supabase 回 unexpected_failure + "Error sending confirmation/recovery email"
+  if (msg.includes("error sending") && msg.includes("email")) return "確認信寄送失敗，請稍後再試；若持續發生，請聯絡管理員檢查寄信設定";
   if (code === "invalid_credentials" || msg.includes("invalid login credentials")) return "帳號或密碼錯誤";
   if (code === "email_not_confirmed" || msg.includes("email not confirmed")) return "信箱尚未確認，請先點擊確認信中的連結";
   if (code === "user_already_exists" || code === "email_exists" || msg.includes("already registered")) return "此信箱已註冊，請直接登入";
