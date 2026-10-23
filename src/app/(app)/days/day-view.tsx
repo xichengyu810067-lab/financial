@@ -11,7 +11,7 @@ import { Stamp } from "@/components/journal/stamp";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { evaluateSpendingAlerts } from "@/lib/ledger/alerts";
+import { evaluateSpendingAlerts, monthContext } from "@/lib/ledger/alerts";
 import { compareChip, netWorthChange, type CompareChip } from "@/lib/ledger/day-model";
 import { useCategoryStats, useDailySummary, type DailySummaryRow } from "@/lib/ledger/days";
 import { dayLabel, monthRange } from "@/lib/ledger/entries";
@@ -21,6 +21,7 @@ import { useAccounts, useLedger, useProfile } from "@/lib/ledger/queries";
 import { buildBalanceSheet, round2 } from "@/lib/ledger/report-model";
 import { useBalanceSheet, useEntriesInRange } from "@/lib/ledger/reports";
 import { AlertsCard } from "./alerts-card";
+import { BudgetCard } from "./budget-card";
 import { DayCalendar } from "./day-calendar";
 
 interface DayViewProps {
@@ -114,6 +115,8 @@ export function DayView({ date: dateParam }: DayViewProps) {
   const mtd = monthQuery.data.filter((r) => r.day <= date);
   const mtdIncome = round2(mtd.reduce((s, r) => s + r.income, 0));
   const mtdExpense = round2(mtd.reduce((s, r) => s + r.expense, 0));
+  const { daysInMonth, dayOfMonth } = monthContext(date);
+  const spendingLimit = ledger.monthly_spending_limit;
 
   const nextDate = addDays(date, 1);
   const nextHref = nextDate === today ? "/today" : `/days/${nextDate}`;
@@ -195,17 +198,20 @@ export function DayView({ date: dateParam }: DayViewProps) {
       </section>
 
       <section className="grid gap-3 lg:grid-cols-5">
-        <Card size="sm" className="border-t-[3px] border-t-primary lg:col-span-2">
-          <Stamp className="absolute top-3 right-3">淨值</Stamp>
-          <CardContent className="grid gap-1 pr-16">
-            <span className="text-xs text-muted-foreground">{isToday ? "目前淨值" : "當天淨值"}</span>
-            <span className="text-[28px] font-bold tabular-nums">{formatTWD(netWorth)}</span>
-            <div className="flex flex-wrap gap-1.5">
-              <Chip chip={netWorthChange(netWorth, netWorthYesterday)} prefix="比昨天" />
-              <Chip chip={netWorthChange(netWorth, netWorthLastWeek)} prefix={`比${weekAgainst}`} />
-            </div>
-          </CardContent>
-        </Card>
+        <div className="grid gap-3 lg:col-span-2">
+          <Card size="sm" className="border-t-[3px] border-t-primary">
+            <Stamp className="absolute top-3 right-3">淨值</Stamp>
+            <CardContent className="grid gap-1 pr-16">
+              <span className="text-xs text-muted-foreground">{isToday ? "目前淨值" : "當天淨值"}</span>
+              <span className="text-[28px] font-bold tabular-nums">{formatTWD(netWorth)}</span>
+              <div className="flex flex-wrap gap-1.5">
+                <Chip chip={netWorthChange(netWorth, netWorthYesterday)} prefix="比昨天" />
+                <Chip chip={netWorthChange(netWorth, netWorthLastWeek)} prefix={`比${weekAgainst}`} />
+              </div>
+            </CardContent>
+          </Card>
+          {isToday && spendingLimit !== null && <BudgetCard limit={spendingLimit} spent={mtdExpense} daysInMonth={daysInMonth} dayOfMonth={dayOfMonth} />}
+        </div>
         <AlertsCard alerts={alerts} isToday={isToday} className="lg:col-span-3" />
       </section>
 

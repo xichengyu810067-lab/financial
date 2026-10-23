@@ -17,7 +17,7 @@ import { buildIncomeStatement, percentOf, round2 } from "@/lib/ledger/report-mod
 import { useIncomeStatement } from "@/lib/ledger/reports";
 import { DetailSheet } from "../reports/detail-sheet";
 import { sumAmounts, type DetailRequest } from "../reports/drill";
-import { BaselineProgress } from "./baseline-progress";
+import { BudgetSection } from "./budget-section";
 import { CategoryDonut } from "./category-donut";
 import { DailyBars } from "./daily-bars";
 
@@ -185,11 +185,23 @@ export function MonthView({ month: monthParam }: MonthViewProps) {
         </Card>
         <Card size="sm">
           <CardHeader>
-            <CardTitle>離基準線還有多遠</CardTitle>
-            <CardDescription>{isCurrent ? `黑色標記是今天應該在的進度（${Math.round(expected * 100)}%）。` : "整個月的結果。"}</CardDescription>
+            <CardTitle>本月預算</CardTitle>
+            <CardDescription>
+              {isCurrent ? `黑色標記是今天應該在的進度（${Math.round(expected * 100)}%）。` : "整個月的結果。"}點金額可以改這個月的額度。
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <BaselineProgress rows={rows} expected={expected} onSelect={openRow} />
+            <BudgetSection
+              ledgerId={ledger.id}
+              month={month}
+              isCurrent={isCurrent}
+              rows={rows}
+              expected={expected}
+              limit={ledger.monthly_spending_limit}
+              spent={expense}
+              daysLeft={isCurrent ? daysInMonth - dayOfMonth : 0}
+              onSelect={openRow}
+            />
           </CardContent>
         </Card>
       </section>

@@ -79,6 +79,7 @@ function overspendAfter(ctx: SaveContext): SpendingAlert | undefined {
       is_archived: category.is_archived,
       sort_order: category.sort_order,
       monthly_budget: category.monthly_budget,
+      month_budget: null,
       month_to_date: ctx.amount,
       month_count: 1,
       prev3_avg: 0,

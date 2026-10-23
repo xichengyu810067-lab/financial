@@ -36,7 +36,7 @@ export function SettingsView() {
   // key 讓資料重新載入（例如儲存後）時表單以新值重新初始化
   return (
     <SettingsForm
-      key={`${ledger.id}:${ledger.name}:${ledger.start_date}:${profile.display_name}:${profile.slogan}`}
+      key={`${ledger.id}:${ledger.name}:${ledger.start_date}:${ledger.monthly_spending_limit}:${profile.display_name}:${profile.slogan}`}
       ledger={ledger}
       profile={profile}
     />
@@ -50,6 +50,7 @@ function SettingsForm({ ledger, profile }: { ledger: Ledger; profile: Profile & 
 
   const [ledgerName, setLedgerName] = useState(ledger.name);
   const [startDate, setStartDate] = useState(ledger.start_date);
+  const [spendingLimit, setSpendingLimit] = useState(ledger.monthly_spending_limit === null ? "" : String(ledger.monthly_spending_limit));
   const [displayName, setDisplayName] = useState(profile.display_name ?? "");
   const [slogan, setSlogan] = useState(profile.slogan ?? "");
 
@@ -57,8 +58,11 @@ function SettingsForm({ ledger, profile }: { ledger: Ledger; profile: Profile & 
     e.preventDefault();
     if (!ledgerName.trim()) return toast.error("請輸入帳本名稱");
     if (!startDate) return toast.error("請選擇起始日");
+    const limitRaw = spendingLimit.trim();
+    const limit = limitRaw === "" ? null : Number(limitRaw);
+    if (limit !== null && (!Number.isFinite(limit) || limit < 0)) return toast.error("每月總支出上限請輸入 0 以上的金額");
     updateLedger.mutate(
-      { id: ledger.id, name: ledgerName.trim(), start_date: startDate },
+      { id: ledger.id, name: ledgerName.trim(), start_date: startDate, monthly_spending_limit: limit },
       { onSuccess: () => toast.success("已儲存帳本設定"), onError: (err) => toast.error(translateDbError(err)) },
     );
   };
@@ -91,6 +95,9 @@ function SettingsForm({ ledger, profile }: { ledger: Ledger; profile: Profile & 
               </Field>
               <Field label="起始日" htmlFor="start-date">
                 <Input id="start-date" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} required />
+              </Field>
+              <Field label="每月總支出上限" htmlFor="spending-limit" hint="跨類別的總額，留空代表不設；設了之後今天這一頁會多一張「這個月還能花」卡。" className="sm:col-span-2">
+                <Input id="spending-limit" inputMode="decimal" placeholder="例如 25000" value={spendingLimit} onChange={(e) => setSpendingLimit(e.target.value)} />
               </Field>
             </CardContent>
             <CardFooter className="justify-end">

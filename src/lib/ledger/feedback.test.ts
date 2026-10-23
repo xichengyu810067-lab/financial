@@ -24,6 +24,7 @@ const stat = (overrides: Partial<CategoryStat> & Pick<CategoryStat, "account_id"
   is_archived: false,
   sort_order: 0,
   monthly_budget: null,
+  month_budget: null,
   month_to_date: 0,
   month_count: 0,
   prev3_avg: 0,

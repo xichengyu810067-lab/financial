@@ -19,7 +19,10 @@ export interface CategoryStat {
   color: string | null;
   is_archived: boolean;
   sort_order: number;
+  /** 類別基準線 */
   monthly_budget: number | null;
+  /** 當月覆寫（budgets 表）；優先於基準線 */
+  month_budget: number | null;
   month_to_date: number;
   month_count: number;
   prev3_avg: number;
@@ -51,6 +54,12 @@ export const MIN_DAYS_FOR_PACE = 3;
 export const MIN_ENTRIES_FOR_PACE = 2;
 export const LARGE_ENTRY_MULTIPLIER = 3;
 export const MIN_HISTORY_FOR_LARGE = 5;
+
+/** 這個月實際用的基準線：當月覆寫 → 類別基準線；都沒有就 null */
+export function effectiveBudget(stat: Pick<CategoryStat, "monthly_budget" | "month_budget">): number | null {
+  const budget = stat.month_budget ?? stat.monthly_budget;
+  return budget !== null && budget > 0 ? budget : null;
+}
 
 export function monthContext(asOf: string): { daysInMonth: number; dayOfMonth: number } {
   const [y, m, d] = asOf.split("-").map(Number);
@@ -85,8 +94,9 @@ export function aggregateStats(stats: CategoryStat[]): { parents: CategoryStat[]
 
 function paceAlert(stat: CategoryStat, asOf: string): SpendingAlert | null {
   const { daysInMonth, dayOfMonth } = monthContext(asOf);
-  const usingBudget = stat.monthly_budget !== null && stat.monthly_budget > 0;
-  const baseline = usingBudget ? stat.monthly_budget! : stat.prev3_months > 0 && stat.prev3_avg > 0 ? stat.prev3_avg : null;
+  const budget = effectiveBudget(stat);
+  const usingBudget = budget !== null;
+  const baseline = budget ?? (stat.prev3_months > 0 && stat.prev3_avg > 0 ? stat.prev3_avg : null);
   if (baseline === null) return null;
   if (dayOfMonth < MIN_DAYS_FOR_PACE || stat.month_count < MIN_ENTRIES_FOR_PACE) return null;
   const projected = Math.round((stat.month_to_date / dayOfMonth) * daysInMonth);
@@ -117,8 +127,8 @@ function paceAlert(stat: CategoryStat, asOf: string): SpendingAlert | null {
 }
 
 function habitAlert(stat: CategoryStat): SpendingAlert | null {
-  const budget = stat.monthly_budget;
-  if (budget === null || budget <= 0 || stat.prev3_months === 0) return null;
+  const budget = effectiveBudget(stat);
+  if (budget === null || stat.prev3_months === 0) return null;
   if (stat.prev3_avg <= budget * OVER_RATIO) return null;
   const within = stat.month_to_date <= budget;
   return {
@@ -166,7 +176,7 @@ function largeEntryAlerts(stats: CategoryStat[], entries: Entry[]): SpendingAler
 /** 某一天的警示：紅色在前，再來單筆大額，最後橙色；同一個類別紅色優先於橙色 */
 export function evaluateSpendingAlerts(stats: CategoryStat[], dayEntries: Entry[], asOf: string): SpendingAlert[] {
   const { parents, children } = aggregateStats(stats);
-  const candidates = [...parents, ...children.filter((c) => c.monthly_budget !== null && c.monthly_budget > 0)];
+  const candidates = [...parents, ...children.filter((c) => effectiveBudget(c) !== null)];
 
   const red: SpendingAlert[] = [];
   const orange: SpendingAlert[] = [];

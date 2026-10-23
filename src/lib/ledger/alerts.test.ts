@@ -9,6 +9,7 @@ const stat = (overrides: Partial<CategoryStat> & Pick<CategoryStat, "account_id"
   is_archived: false,
   sort_order: 0,
   monthly_budget: null,
+  month_budget: null,
   month_to_date: 0,
   month_count: 0,
   prev3_avg: 0,
@@ -123,6 +124,16 @@ describe("花過頭警示", () => {
     const alerts = evaluateSpendingAlerts(stats, [], AS_OF);
     expect(alerts.map((a) => a.categoryName)).toEqual(["咖啡", "飲食"]); // 咖啡超得更多排前面
     expect(alerts.every((a) => a.level === "red")).toBe(true);
+  });
+
+  it("當月覆寫優先於類別基準線", () => {
+    // 基準線 3000 本來會紅（3900 → 預估 5257）；這個月覆寫成 6000 就不警示
+    const overridden = evaluateSpendingAlerts([stat({ account_id: "shop", name: "購物", monthly_budget: 3000, month_budget: 6000, month_to_date: 3900, month_count: 3 })], [], AS_OF);
+    expect(overridden).toHaveLength(0);
+    // 沒基準線但這個月覆寫 2000 → 用 2000 當尺
+    const onlyMonth = evaluateSpendingAlerts([stat({ account_id: "shop", name: "購物", month_budget: 2000, month_to_date: 2500, month_count: 3 })], [], AS_OF);
+    expect(onlyMonth).toHaveLength(1);
+    expect(onlyMonth[0].title).toContain("基準線 $2,000");
   });
 
   it("排序：紅色、單筆大額、橙色", () => {
