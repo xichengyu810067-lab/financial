@@ -1,15 +1,15 @@
 import type { Metadata } from "next";
 import { ClientOnly } from "@/components/client-only";
 import { Skeleton } from "@/components/ui/skeleton";
-import { DashboardView } from "../dashboard/dashboard-view";
+import { DayView } from "../days/day-view";
 
 export const metadata: Metadata = { title: "今天" };
 
-/** 今天這一頁；「一天一頁」在下一個 PR 實作，這裡先放總覽 */
+/** 今天這一頁：日期以瀏覽器的本地日期為準，所以在瀏覽器端決定 */
 export default function TodayPage() {
   return (
     <ClientOnly fallback={<Skeleton className="h-96 w-full" />}>
-      <DashboardView />
+      <DayView />
     </ClientOnly>
   );
 }

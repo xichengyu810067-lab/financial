@@ -20,6 +20,7 @@ const account = (overrides: Partial<Account> & Pick<Account, "id" | "name" | "ty
   is_system: false,
   is_archived: false,
   sort_order: 0,
+  monthly_budget: null,
   created_at: "2026-01-01T00:00:00Z",
   ...overrides,
 });

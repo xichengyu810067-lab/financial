@@ -25,6 +25,7 @@ export type Database = {
           is_archived: boolean
           is_system: boolean
           ledger_id: string
+          monthly_budget: number | null
           name: string
           parent_id: string | null
           sort_order: number
@@ -39,6 +40,7 @@ export type Database = {
           is_archived?: boolean
           is_system?: boolean
           ledger_id: string
+          monthly_budget?: number | null
           name: string
           parent_id?: string | null
           sort_order?: number
@@ -53,6 +55,7 @@ export type Database = {
           is_archived?: boolean
           is_system?: boolean
           ledger_id?: string
+          monthly_budget?: number | null
           name?: string
           parent_id?: string | null
           sort_order?: number
@@ -421,6 +424,25 @@ export type Database = {
         Args: { p_entry_id: string }
         Returns: undefined
       }
+      category_spending_stats: {
+        Args: { p_as_of: string; p_ledger: string }
+        Returns: {
+          account_id: string
+          color: string
+          icon: string
+          is_archived: boolean
+          month_count: number
+          month_to_date: number
+          monthly_budget: number
+          name: string
+          parent_id: string
+          prev3_avg: number
+          prev3_months: number
+          recent_avg_entry: number
+          recent_count: number
+          sort_order: number
+        }[]
+      }
       complete_onboarding: {
         Args: { p_accounts: Json; p_name: string; p_start_date: string }
         Returns: undefined
@@ -428,6 +450,15 @@ export type Database = {
       create_ledger_with_defaults: {
         Args: { p_name?: string }
         Returns: string
+      }
+      daily_summary: {
+        Args: { p_from: string; p_ledger: string; p_to: string }
+        Returns: {
+          day: string
+          entry_count: number
+          expense: number
+          income: number
+        }[]
       }
       is_ledger_owner: { Args: { p_ledger_id: string }; Returns: boolean }
       monthly_summary: {

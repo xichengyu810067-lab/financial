@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { AccountIcon } from "@/components/account-icon";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { PageHeader } from "@/components/page-header";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -28,6 +29,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { translateDbError } from "@/lib/ledger/errors";
+import { formatTWD } from "@/lib/ledger/format";
 import { useAccounts, useBalances, useDeleteAccount, useLedger, useMoveAccount, useSetArchived } from "@/lib/ledger/queries";
 import { isCategory, type Account } from "@/lib/ledger/types";
 import { CategoryDialog } from "./category-dialog";
@@ -250,7 +252,14 @@ function CategoryRow({ category, isChild, isFirst, isLast, onMove, onEdit, onAdd
   return (
     <div className={isChild ? "flex items-center gap-3 py-1.5 pl-8 pr-1" : "flex items-center gap-3 px-3 py-2"}>
       <AccountIcon icon={category.icon} color={category.color} size={isChild ? "sm" : "md"} />
-      <span className={isChild ? "min-w-0 flex-1 truncate text-sm" : "min-w-0 flex-1 truncate font-medium"}>{category.name}</span>
+      <span className={isChild ? "min-w-0 flex-1 truncate text-sm" : "min-w-0 flex-1 truncate font-medium"}>
+        {category.name}
+        {category.type === "expense" && category.monthly_budget !== null && (
+          <Badge variant="outline" className="ml-2 align-middle tabular-nums">
+            基準線 {formatTWD(category.monthly_budget)}
+          </Badge>
+        )}
+      </span>
       {!isChild && onAddChild && (
         <Button variant="ghost" size="sm" className="hidden sm:inline-flex" onClick={onAddChild}>
           <FolderPlus className="size-4" aria-hidden />

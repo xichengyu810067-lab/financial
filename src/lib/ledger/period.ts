@@ -193,6 +193,26 @@ export function periodLabel(period: Period): string {
   }
 }
 
+const weekdayFormatter = new Intl.DateTimeFormat("zh-TW", { weekday: "short" });
+
+/** "2026-10-23" → "週五" */
+export function weekdayShort(iso: string): string {
+  const { y, m, d } = parse(iso);
+  return weekdayFormatter.format(new Date(y, m - 1, d));
+}
+
+/** 一年中的第幾天（1 月 1 日 = 1） */
+export function dayOfYear(iso: string): number {
+  const { y } = parse(iso);
+  return daysBetween(format(y, 1, 1), iso);
+}
+
+/** 該年有幾天 */
+export function daysInYear(iso: string): number {
+  const { y } = parse(iso);
+  return daysBetween(format(y, 1, 1), format(y, 12, 31));
+}
+
 /** "2026-03" → "3 月" */
 export function shortMonthLabel(month: string): string {
   return `${Number(month.slice(5, 7))} 月`;
