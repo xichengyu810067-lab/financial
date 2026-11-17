@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ClientOnly } from "@/components/client-only";
 import { Skeleton } from "@/components/ui/skeleton";
-import { isValidMonth, monthLabel } from "@/lib/ledger/entries";
+import { isValidMonth, monthLabel } from "@/lib/ledger/month";
 import { MonthView } from "../month-view";
 
 interface MonthPageProps {

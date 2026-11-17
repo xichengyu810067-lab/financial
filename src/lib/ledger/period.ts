@@ -3,7 +3,7 @@
  * 日期一律用 YYYY-MM-DD 字串，運算時以本地年月日建立 Date，避免時區位移。
  */
 
-export type PeriodPreset = "month" | "quarter" | "year" | "custom";
+export type PeriodPreset = "day" | "week" | "month" | "quarter" | "year" | "custom";
 
 export interface Period {
   preset: PeriodPreset;
@@ -26,7 +26,8 @@ export const QUICK_OPTIONS: { value: QuickOption; label: string }[] = [
 ];
 
 const ISO_DATE = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
-const MONTHS_PER: Record<Exclude<PeriodPreset, "custom">, number> = { month: 1, quarter: 3, year: 12 };
+type MonthSpanPreset = "month" | "quarter" | "year";
+const MONTHS_PER: Record<MonthSpanPreset, number> = { month: 1, quarter: 3, year: 12 };
 
 interface Ymd {
   y: number;
@@ -97,10 +98,26 @@ export function yearPeriod(y: number): Period {
   return monthSpan("year", y, 1, 12);
 }
 
-/** 包含某一天的月／季／年 */
+export function dayPeriod(iso: string): Period {
+  return { preset: "day", from: iso, to: iso };
+}
+
+/** 含某一天的那一週：週一到週日 */
+export function weekPeriod(iso: string): Period {
+  const { y, m, d } = parse(iso);
+  const weekday = new Date(y, m - 1, d).getDay(); // 0 = 週日
+  const from = addDays(iso, -((weekday + 6) % 7));
+  return { preset: "week", from, to: addDays(from, 6) };
+}
+
+/** 包含某一天的日／週／月／季／年 */
 export function periodContaining(preset: Exclude<PeriodPreset, "custom">, iso: string): Period {
   const { y, m } = parse(iso);
   switch (preset) {
+    case "day":
+      return dayPeriod(iso);
+    case "week":
+      return weekPeriod(iso);
     case "month":
       return monthPeriod(y, m);
     case "quarter":
@@ -115,11 +132,11 @@ export function customPeriod(from: string, to: string): Period {
   return from <= to ? { preset: "custom", from, to } : { preset: "custom", from: to, to: from };
 }
 
-/** 往前（delta < 0）或往後移同長度的期間：月→上下月、季→上下季、年→前後年、自訂→同天數 */
+/** 往前（delta < 0）或往後移同長度的期間：日→前後天、週→前後週、月→上下月、季→上下季、年→前後年、自訂→同天數 */
 export function shiftPeriod(period: Period, delta: number): Period {
-  if (period.preset === "custom") {
+  if (period.preset === "custom" || period.preset === "day" || period.preset === "week") {
     const length = daysBetween(period.from, period.to);
-    return { preset: "custom", from: addDays(period.from, delta * length), to: addDays(period.to, delta * length) };
+    return { preset: period.preset, from: addDays(period.from, delta * length), to: addDays(period.to, delta * length) };
   }
   const months = MONTHS_PER[period.preset];
   const { y, m } = parse(period.from);
@@ -179,9 +196,16 @@ export function monthsInPeriod(period: Period): string[] {
   return months;
 }
 
+/** "2026-10-19" → "2026/10/19"；omitYear 時 → "10/19" */
+const slashDate = (iso: string, omitYear = false) => (omitYear ? iso.slice(5) : iso).replaceAll("-", "/");
+
 export function periodLabel(period: Period): string {
-  const { y, m } = parse(period.from);
+  const { y, m, d } = parse(period.from);
   switch (period.preset) {
+    case "day":
+      return `${y} 年 ${m} 月 ${d} 日（${weekdayShort(period.from)}）`;
+    case "week":
+      return `${slashDate(period.from)} – ${slashDate(period.to, period.to.slice(0, 4) === period.from.slice(0, 4))}`;
     case "month":
       return `${y} 年 ${m} 月`;
     case "quarter":
@@ -189,7 +213,7 @@ export function periodLabel(period: Period): string {
     case "year":
       return `${y} 年`;
     case "custom":
-      return `${period.from.replaceAll("-", "/")} – ${period.to.replaceAll("-", "/")}`;
+      return `${slashDate(period.from)} – ${slashDate(period.to)}`;
   }
 }
 
@@ -225,7 +249,7 @@ export function periodFromParams(
 ): Period {
   const { preset, from, to } = params;
   if (preset === "custom" && isValidISODate(from) && isValidISODate(to)) return customPeriod(from, to);
-  if (preset === "month" || preset === "quarter" || preset === "year") {
+  if (preset === "day" || preset === "week" || preset === "month" || preset === "quarter" || preset === "year") {
     return periodContaining(preset, isValidISODate(from) ? from : today);
   }
   return periodContaining("month", today);

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   customPeriod,
   dayBefore,
+  dayPeriod,
   daysBetween,
   isValidISODate,
   monthPeriod,
@@ -14,10 +15,36 @@ import {
   quarterPeriod,
   quickOptionOf,
   shiftPeriod,
+  weekPeriod,
   yearPeriod,
 } from "./period";
 
 const TODAY = "2026-10-23";
+
+describe("日與週", () => {
+  it("週一到週日，跨年也對", () => {
+    const week = { preset: "week", from: "2026-10-19", to: "2026-10-25" };
+    expect(weekPeriod("2026-10-24")).toEqual(week); // 週六
+    expect(weekPeriod("2026-10-19")).toEqual(week); // 週一
+    expect(weekPeriod("2026-10-25")).toEqual(week); // 週日
+    expect(periodContaining("week", "2026-01-01")).toEqual({ preset: "week", from: "2025-12-29", to: "2026-01-04" });
+    expect(periodContaining("day", "2026-10-24")).toEqual({ preset: "day", from: "2026-10-24", to: "2026-10-24" });
+  });
+
+  it("日移一天、週移七天", () => {
+    expect(shiftPeriod(dayPeriod("2026-03-01"), -1)).toEqual(dayPeriod("2026-02-28"));
+    expect(shiftPeriod(weekPeriod("2026-10-24"), 1)).toEqual({ preset: "week", from: "2026-10-26", to: "2026-11-01" });
+    expect(previousPeriod(weekPeriod("2026-10-24"))).toEqual({ preset: "week", from: "2026-10-12", to: "2026-10-18" });
+  });
+
+  it("標籤與網址參數", () => {
+    expect(periodLabel(dayPeriod("2026-10-24"))).toBe("2026 年 10 月 24 日（週六）");
+    expect(periodLabel(weekPeriod("2026-10-24"))).toBe("2026/10/19 – 10/25");
+    expect(periodLabel(weekPeriod("2026-01-01"))).toBe("2025/12/29 – 2026/01/04");
+    expect(periodFromParams({ preset: "day", from: "2026-10-24" }, TODAY)).toEqual(dayPeriod("2026-10-24"));
+    expect(periodFromParams({ preset: "week" }, TODAY)).toEqual(weekPeriod(TODAY));
+  });
+});
 
 describe("預設期間", () => {
   it("月：含月底與閏年", () => {

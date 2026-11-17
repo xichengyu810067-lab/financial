@@ -4,7 +4,7 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { queryKeys } from "./queries";
 
-/** 每個月底的淨值（資產 − 負債），給年度封底的走勢圖 */
+/** 每個月底的淨值（資產 − 負債），給資產負債表上方的走勢圖 */
 export function useNetWorthByMonth(ledgerId: string | undefined, from: string, to: string) {
   return useQuery({
     queryKey: [...queryKeys.reports(ledgerId ?? ""), "net-worth", from, to] as const,

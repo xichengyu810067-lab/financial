@@ -1,13 +1,20 @@
 "use client";
 
 import { Fragment, useState } from "react";
+import { CategoryDonut } from "@/components/charts/category-donut";
+import { ChartFigure } from "@/components/charts/chart-figure";
+import { DailyBars } from "@/components/charts/daily-bars";
+import { MonthlyBars } from "@/components/charts/monthly-bars";
+import { Skeleton } from "@/components/ui/skeleton";
+import { dailySeries, donutSlices, monthSeries, type DonutSlice } from "@/lib/ledger/chart-model";
+import { useDailySummary } from "@/lib/ledger/days";
+import { dayLabel } from "@/lib/ledger/entries";
 import { formatPercent, formatTWD } from "@/lib/ledger/format";
-import { monthsInPeriod, periodLabel, previousPeriod, type Period } from "@/lib/ledger/period";
-import { buildIncomeStatement, percentOf, type IncomeLine, type IncomeSection } from "@/lib/ledger/report-model";
+import { daysBetween, monthPeriod, monthsInPeriod, periodLabel, previousPeriod, type Period } from "@/lib/ledger/period";
+import { buildIncomeStatement, percentOf, round2, type IncomeLine, type IncomeSection } from "@/lib/ledger/report-model";
 import { useIncomeStatement, useMonthlySummary } from "@/lib/ledger/reports";
 import type { Account } from "@/lib/ledger/types";
 import { sumAmounts, type DetailRequest } from "./drill";
-import { MonthlyTable } from "./monthly-table";
 import {
   DeltaCell,
   EmptyReport,
@@ -29,7 +36,12 @@ interface IncomeStatementProps {
   accounts: Account[];
   period: Period;
   onDrill: (request: DetailRequest) => void;
+  /** 點每月長條的某一個月時，把報表期間切到那個月 */
+  onChangePeriod?: (period: Period) => void;
 }
+
+/** 超過這個天數的期間，上方的圖改成一個月一組 */
+const MAX_DAILY_BAR_DAYS = 62;
 
 const COLUMNS: ReportColumn[] = [
   { label: "類別", align: "left" },
@@ -41,12 +53,15 @@ const COLUMNS: ReportColumn[] = [
 
 type Tone = "income" | "expense";
 
-export function IncomeStatement({ ledgerId, accounts, period, onDrill }: IncomeStatementProps) {
+export function IncomeStatement({ ledgerId, accounts, period, onDrill, onChangePeriod }: IncomeStatementProps) {
   const previous = previousPeriod(period);
   const currentQuery = useIncomeStatement(ledgerId, period.from, period.to);
   const previousQuery = useIncomeStatement(ledgerId, previous.from, previous.to);
-  const showMonthly = period.preset === "year";
-  const monthlyQuery = useMonthlySummary(ledgerId, period.from, period.to, showMonthly);
+  // 選「日」只有環圈；季／年或超過兩個月的自訂期間一個月一組，不然一天一根
+  const chartMode: "none" | "daily" | "monthly" =
+    period.preset === "day" ? "none" : period.preset === "quarter" || period.preset === "year" || daysBetween(period.from, period.to) > MAX_DAILY_BAR_DAYS ? "monthly" : "daily";
+  const dailyQuery = useDailySummary(ledgerId, period.from, period.to, chartMode === "daily");
+  const monthlyQuery = useMonthlySummary(ledgerId, period.from, period.to, chartMode === "monthly");
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(() => new Set());
 
   const error = currentQuery.error ?? previousQuery.error;
@@ -76,6 +91,36 @@ export function IncomeStatement({ ledgerId, accounts, period, onDrill }: IncomeS
       summarize: (entries) => [{ label: `${sectionLabel}合計`, value: sumAmounts(entries), tone }],
     });
   };
+
+  const openDay = (day: string) =>
+    onDrill({
+      title: dayLabel(day),
+      subtitle: "這一天的交易",
+      period: { preset: "day", from: day, to: day },
+      match: (entry) => entry.kind !== "opening",
+      summarize: (entries) => {
+        const income = sumAmounts(entries.filter((e) => e.kind === "income"));
+        const expense = sumAmounts(entries.filter((e) => e.kind === "expense"));
+        return [
+          { label: "收入", value: income, tone: "income" },
+          { label: "支出", value: expense, tone: "expense" },
+          { label: "結餘", value: round2(income - expense) },
+        ];
+      },
+    });
+
+  const openSlice = (slice: DonutSlice) => {
+    const ids = new Set(slice.memberIds);
+    onDrill({
+      title: slice.name,
+      subtitle: `費用・${label}`,
+      period,
+      match: (entry) => entry.kind === "expense" && entry.category_id !== null && ids.has(entry.category_id),
+      summarize: (entries) => [{ label: "費用合計", value: sumAmounts(entries), tone: "expense" }],
+    });
+  };
+
+  const selectMonth = (month: string) => onChangePeriod?.(monthPeriod(Number(month.slice(0, 4)), Number(month.slice(5, 7))));
 
   const cells = (line: IncomeLine, colorize: boolean) => (
     <>
@@ -137,6 +182,33 @@ export function IncomeStatement({ ledgerId, accounts, period, onDrill }: IncomeS
 
   return (
     <div className="grid gap-5">
+      {!isEmpty && (
+        <section aria-label="損益表的圖" className="grid gap-3 lg:grid-cols-5">
+          {chartMode !== "none" && (
+            <ChartFigure
+              title={chartMode === "daily" ? "每天的收入與支出" : "每個月的收入與支出"}
+              description={chartMode === "daily" ? "收入往上、支出往下；點一根看那天的交易。" : "點一個月把報表切到那個月。"}
+              className="lg:col-span-3"
+            >
+              {chartMode === "daily" ? (
+                dailyQuery.data ? (
+                  <DailyBars points={dailySeries(dailyQuery.data, period.from, period.to)} onSelectDay={openDay} />
+                ) : (
+                  <Skeleton className="h-56 w-full" />
+                )
+              ) : monthlyQuery.data ? (
+                <MonthlyBars points={monthSeries(monthlyQuery.data, monthsInPeriod(period))} onSelectMonth={selectMonth} hint="點一個月把報表切到那個月" />
+              ) : (
+                <Skeleton className="h-56 w-full" />
+              )}
+            </ChartFigure>
+          )}
+          <ChartFigure title="支出花在哪" description="點一片看那個類別的交易。" className={chartMode === "none" ? "lg:col-span-5" : "lg:col-span-2"}>
+            <CategoryDonut slices={donutSlices(statement.expense.lines)} total={statement.expense.current} onSelect={openSlice} label="支出" emptyText={`${label}沒有支出。`} />
+          </ChartFigure>
+        </section>
+      )}
+
       <StatTiles
         items={[
           { label: "收入", value: statement.revenue.current, tone: "income", tape: "accent", hint: `上期 ${formatTWD(statement.revenue.previous)}` },
@@ -165,8 +237,6 @@ export function IncomeStatement({ ledgerId, accounts, period, onDrill }: IncomeS
           </TotalRow>
         </ReportTable>
       )}
-
-      {showMonthly && <MonthlyTable months={monthsInPeriod(period)} rows={monthlyQuery.data} error={monthlyQuery.error?.message} />}
     </div>
   );
 }

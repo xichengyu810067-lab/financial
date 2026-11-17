@@ -1,5 +1,8 @@
 "use client";
 
+import { ActivityBars } from "@/components/charts/activity-bars";
+import { ChartFigure } from "@/components/charts/chart-figure";
+import { activitySeries } from "@/lib/ledger/chart-model";
 import { formatTWD } from "@/lib/ledger/format";
 import { periodLabel, type Period } from "@/lib/ledger/period";
 import { buildCashFlow, type CashFlowActivity, type CashFlowLine } from "@/lib/ledger/report-model";
@@ -76,6 +79,12 @@ export function CashFlow({ ledgerId, accounts, period, onDrill }: CashFlowProps)
 
   return (
     <div className="grid gap-5">
+      {!isEmpty && (
+        <ChartFigure title="現金從哪裡來、到哪裡去" description="營業、投資、融資三類活動；流入往上、流出往下。">
+          <ActivityBars points={activitySeries(statement.activities)} />
+        </ChartFigure>
+      )}
+
       <StatTiles
         items={[
           { label: "期初現金", value: statement.opening, tape: "sun", hint: `${period.from} 之前` },
