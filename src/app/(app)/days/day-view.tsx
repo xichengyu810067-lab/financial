@@ -23,6 +23,7 @@ import { useBalanceSheet, useEntriesInRange } from "@/lib/ledger/reports";
 import { AlertsCard } from "./alerts-card";
 import { BudgetCard } from "./budget-card";
 import { DayCalendar } from "./day-calendar";
+import { GoalCard } from "./goal-card";
 
 interface DayViewProps {
   /** 沒給就是今天（以瀏覽器的本地日期為準） */
@@ -211,6 +212,7 @@ export function DayView({ date: dateParam }: DayViewProps) {
             </CardContent>
           </Card>
           {isToday && spendingLimit !== null && <BudgetCard limit={spendingLimit} spent={mtdExpense} daysInMonth={daysInMonth} dayOfMonth={dayOfMonth} />}
+          {isToday && <GoalCard ledgerId={ledger.id} accounts={accounts} today={today} />}
         </div>
         <AlertsCard alerts={alerts} isToday={isToday} className="lg:col-span-3" />
       </section>

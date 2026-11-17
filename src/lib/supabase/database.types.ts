@@ -1,4 +1,4 @@
-// 由 Supabase MCP generate_typescript_types 產生（里程碑 3 migration 之後）。
+// 由 Supabase MCP generate_typescript_types 產生（里程碑 5 儲蓄目標 migration 之後）。
 // 資料表或函式變更後請重新產生，不要手動修改。
 export type Json =
   | string
@@ -286,34 +286,88 @@ export type Database = {
           },
         ]
       }
+      goal_deposits: {
+        Row: {
+          amount: number
+          created_at: string
+          deposit_date: string
+          goal_id: string
+          id: string
+          ledger_id: string
+          note: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          deposit_date?: string
+          goal_id: string
+          id?: string
+          ledger_id: string
+          note?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          deposit_date?: string
+          goal_id?: string
+          id?: string
+          ledger_id?: string
+          note?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "goal_deposits_goal_id_ledger_id_fkey"
+            columns: ["goal_id", "ledger_id"]
+            isOneToOne: false
+            referencedRelation: "goals"
+            referencedColumns: ["id", "ledger_id"]
+          },
+          {
+            foreignKeyName: "goal_deposits_ledger_id_fkey"
+            columns: ["ledger_id"]
+            isOneToOne: false
+            referencedRelation: "ledgers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       goals: {
         Row: {
           account_id: string | null
+          achieved_at: string | null
           created_at: string
           id: string
+          is_archived: boolean
           ledger_id: string
           name: string
           note: string | null
+          sort_order: number
           target_amount: number
           target_date: string | null
         }
         Insert: {
           account_id?: string | null
+          achieved_at?: string | null
           created_at?: string
           id?: string
+          is_archived?: boolean
           ledger_id: string
           name: string
           note?: string | null
+          sort_order?: number
           target_amount: number
           target_date?: string | null
         }
         Update: {
           account_id?: string | null
+          achieved_at?: string | null
           created_at?: string
           id?: string
+          is_archived?: boolean
           ledger_id?: string
           name?: string
           note?: string | null
+          sort_order?: number
           target_amount?: number
           target_date?: string | null
         }
@@ -465,6 +519,14 @@ export type Database = {
           entry_count: number
           expense: number
           income: number
+        }[]
+      }
+      goal_progress: {
+        Args: { p_as_of: string; p_ledger: string }
+        Returns: {
+          goal_id: string
+          saved: number
+          saved_90d: number
         }[]
       }
       is_ledger_owner: { Args: { p_ledger_id: string }; Returns: boolean }

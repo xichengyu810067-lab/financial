@@ -8,6 +8,9 @@ import { NotebookCover } from "@/components/journal/notebook-cover";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { coverColorOf } from "@/lib/brand";
+import { todayISO } from "@/lib/ledger/format";
+import { coverGoalLine, pickFeaturedGoal } from "@/lib/ledger/goal-model";
+import { useGoalStatuses } from "@/lib/ledger/goals";
 import { useLedger, useProfile } from "@/lib/ledger/queries";
 import { usePrefersReducedMotion } from "@/lib/use-reduced-motion";
 
@@ -21,6 +24,8 @@ export function CoverView() {
   const router = useRouter();
   const { data: ledger } = useLedger();
   const { data: profile } = useProfile();
+  const today = todayISO();
+  const { statuses: goalStatuses } = useGoalStatuses(ledger?.id, today);
   const reducedMotion = usePrefersReducedMotion();
   const [opening, setOpening] = useState(false);
 
@@ -77,7 +82,7 @@ export function CoverView() {
             aria-label="翻開帳本"
             className="book-cover relative block cursor-pointer rounded-[8px_18px_18px_8px] text-left outline-none focus-visible:ring-4 focus-visible:ring-ring/40 sm:rounded-[10px_22px_22px_10px]"
           >
-            <NotebookCover name={ledger.name} slogan={profile.slogan} material={ledger.cover_material} color={ledger.cover_color} year={year} size="lg" />
+            <NotebookCover name={ledger.name} slogan={profile.slogan} material={ledger.cover_material} color={ledger.cover_color} year={year} goalLine={coverGoalLine(goalStatuses ? pickFeaturedGoal(goalStatuses, today) : null)} size="lg" />
           </button>
         </div>
       </div>

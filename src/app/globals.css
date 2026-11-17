@@ -372,6 +372,9 @@
   .fb-bounce {
     animation: icon-bounce 0.5s ease-out both 0.3s;
   }
+  .fb-stamp-late {
+    animation: stamp-press 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both 0.85s;
+  }
   .fb-bill {
     animation: bill-fly 0.9s ease-in both 0.1s;
   }
@@ -478,6 +481,7 @@
     .fb-piggy,
     .fb-amount,
     .fb-stamp,
+    .fb-stamp-late,
     .fb-bounce,
     .fb-bill {
       animation: none;
@@ -486,7 +490,8 @@
     .fb-bill {
       display: none;
     }
-    .fb-stamp {
+    .fb-stamp,
+    .fb-stamp-late {
       opacity: 0.9;
       transform: rotate(-12deg);
     }

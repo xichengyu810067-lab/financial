@@ -5,7 +5,7 @@ import { formatTWD } from "@/lib/ledger/format";
 import type { Feedback } from "@/lib/ledger/feedback";
 
 /** 各段動畫的長度（毫秒），含淡出 */
-export const FEEDBACK_DURATION: Record<Feedback["kind"], number> = { saving: 1100, stamp: 800, overspend: 1200 };
+export const FEEDBACK_DURATION: Record<Feedback["kind"], number> = { saving: 1100, stamp: 800, overspend: 1200, achieved: 1900 };
 
 interface FeedbackOverlayProps {
   feedback: Feedback;
@@ -29,6 +29,7 @@ export function FeedbackOverlay({ feedback, seq }: FeedbackOverlayProps) {
         {feedback.kind === "saving" && <SavingScene feedback={feedback} />}
         {feedback.kind === "stamp" && <StampScene feedback={feedback} />}
         {feedback.kind === "overspend" && <OverspendScene feedback={feedback} />}
+        {feedback.kind === "achieved" && <AchievedScene feedback={feedback} />}
       </div>
     </div>
   );
@@ -50,6 +51,29 @@ function SavingScene({ feedback }: { feedback: Feedback }) {
       <div className="fb-amount">
         <div className="text-[22px] font-bold text-income tabular-nums">+{formatTWD(feedback.amount)}</div>
         <div className="text-xs text-muted-foreground">存進{feedback.label}</div>
+      </div>
+    </>
+  );
+}
+
+/** 加強版撲滿：六枚硬幣分兩波掉進去，最後蓋上「達標」章 */
+function AchievedScene({ feedback }: { feedback: Feedback }) {
+  return (
+    <>
+      <div className="relative h-32 w-44">
+        {[0, 1, 2, 3, 4, 5].map((i) => (
+          <span
+            key={i}
+            className="fb-coin absolute top-2 size-5 rounded-full border-2 border-[#C99A1E] bg-[#F5C542]"
+            style={{ left: `${30 + (i % 3) * 14 + (i >= 3 ? 7 : 0)}%`, animationDelay: `${i * 0.1}s` }}
+          />
+        ))}
+        <PiggyBank className="fb-piggy absolute bottom-0 left-1/2 w-32 -translate-x-1/2" />
+        <Stamp tone="pink" text="達標" className="fb-stamp-late absolute -right-2 -bottom-1" />
+      </div>
+      <div className="fb-amount">
+        <div className="text-[22px] font-bold text-income">{feedback.label} 達標！</div>
+        <div className="text-xs text-muted-foreground tabular-nums">這筆 +{formatTWD(feedback.amount)} 存滿了</div>
       </div>
     </>
   );
@@ -80,7 +104,7 @@ function OverspendScene({ feedback }: { feedback: Feedback }) {
   );
 }
 
-function Stamp({ tone, className }: { tone: "pink" | "orange"; className?: string }) {
+function Stamp({ tone, text = "已記", className }: { tone: "pink" | "orange"; text?: string; className?: string }) {
   return (
     <span
       className={cn(
@@ -89,7 +113,7 @@ function Stamp({ tone, className }: { tone: "pink" | "orange"; className?: strin
         className,
       )}
     >
-      已記
+      {text}
     </span>
   );
 }

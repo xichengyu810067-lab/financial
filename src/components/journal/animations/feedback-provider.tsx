@@ -26,6 +26,9 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
         if (feedback.kind === "overspend" && feedback.alert) {
           toast.warning(feedback.alert.title, { description: feedback.alert.advice, duration: 3000 });
         }
+        if (feedback.kind === "achieved") {
+          toast.success(`${feedback.label} 達標！`, { description: "目標卡蓋上「達標」章了", duration: 4000 });
+        }
         setCurrent((c) => ({ seq: (c?.seq ?? 0) + 1, feedback }));
       },
     }),

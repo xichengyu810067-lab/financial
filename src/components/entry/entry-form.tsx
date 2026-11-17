@@ -14,6 +14,8 @@ import { useCategoryStats } from "@/lib/ledger/days";
 import { linesForEntry, useDeleteEntries, useSaveEntry, type Entry, type SimpleKind } from "@/lib/ledger/entries";
 import { translateDbError } from "@/lib/ledger/errors";
 import { feedbackForSave } from "@/lib/ledger/feedback";
+import { goalReachedBySave } from "@/lib/ledger/goal-model";
+import { useGoalStatuses } from "@/lib/ledger/goals";
 import { todayISO, yesterdayISO } from "@/lib/ledger/format";
 import type { Line } from "@/lib/ledger/posting";
 import { readLastAccounts, writeLastAccounts } from "@/lib/ledger/preferences";
@@ -84,6 +86,8 @@ export function EntryForm({ ledger, accounts, balances, mode, entry, onDone }: E
   const feedback = useFeedback();
   // 存檔前就抓好的類別統計，用來決定這筆要播哪種動畫（超支要立刻提醒）
   const { data: categoryStats } = useCategoryStats(ledger.id, todayISO());
+  // 存檔前的目標進度：轉帳或收入進綁定帳戶讓目標第一次達標時，改播加強版撲滿
+  const { statuses: goalStatuses } = useGoalStatuses(ledger.id, todayISO());
 
   const accountsById = new Map(accounts.map((a) => [a.id, a]));
   const nameOf = (id: string) => accountsById.get(id)?.name ?? "？";
@@ -178,17 +182,28 @@ export function EntryForm({ ledger, accounts, balances, mode, entry, onDone }: E
             : { transferFrom: form.fromAccountId, transferTo: form.toAccountId },
       );
       toast.success(mode === "edit" ? "已更新交易" : "已記一筆");
+      const reached = goalReachedBySave({
+        kind: form.kind,
+        amount: amountResult.value,
+        date: form.date,
+        today: todayISO(),
+        toAccountId: form.toAccountId || null,
+        statuses: goalStatuses,
+        isEdit: mode === "edit",
+      });
       feedback.play(
-        feedbackForSave({
-          kind: form.kind,
-          amount: amountResult.value,
-          date: form.date,
-          today: todayISO(),
-          category: form.categoryId ? accountsById.get(form.categoryId) : null,
-          toAccount: form.toAccountId ? accountsById.get(form.toAccountId) : null,
-          stats: categoryStats,
-          previous: mode === "edit" && entry ? { amount: Number(entry.amount), date: entry.entry_date, categoryId: entry.category_id } : null,
-        }),
+        reached
+          ? { kind: "achieved", amount: amountResult.value, label: reached.goal.name }
+          : feedbackForSave({
+              kind: form.kind,
+              amount: amountResult.value,
+              date: form.date,
+              today: todayISO(),
+              category: form.categoryId ? accountsById.get(form.categoryId) : null,
+              toAccount: form.toAccountId ? accountsById.get(form.toAccountId) : null,
+              stats: categoryStats,
+              previous: mode === "edit" && entry ? { amount: Number(entry.amount), date: entry.entry_date, categoryId: entry.category_id } : null,
+            }),
       );
       if (andNew) {
         setForm((f) => ({ ...f, amount: "", categoryId: "", memo: "" }));
