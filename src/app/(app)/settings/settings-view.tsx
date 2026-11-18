@@ -19,6 +19,7 @@ import { translateDbError } from "@/lib/ledger/errors";
 import { useLedger, useProfile, useUpdateLedger, useUpdateProfile } from "@/lib/ledger/queries";
 import type { Ledger, Profile } from "@/lib/ledger/types";
 import { BackupCard } from "./backup-card";
+import { CarrierCard } from "./carrier-card";
 import { CategoryRulesCard } from "./category-rules-card";
 
 export function SettingsView() {
@@ -82,7 +83,7 @@ function SettingsForm({ ledger, profile }: { ledger: Ledger; profile: Profile & 
 
   return (
     <>
-      <PageHeader title="設定" description="帳本、個人資料、外觀、分類規則與備份。" />
+      <PageHeader title="設定" description="帳本、個人資料、外觀、手機條碼、分類規則與備份。" />
       <div className="grid gap-6">
         <Card>
           <form onSubmit={saveLedger}>
@@ -137,6 +138,8 @@ function SettingsForm({ ledger, profile }: { ledger: Ledger; profile: Profile & 
         </Card>
 
         <AppearanceCard profile={profile} />
+
+        <CarrierCard profile={profile} />
 
         <CategoryRulesCard ledgerId={ledger.id} />
 

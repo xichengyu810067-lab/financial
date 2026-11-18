@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, ScanLine } from "lucide-react";
 import { cn } from "cn";
 import { EntryRow } from "@/components/entry/entry-row";
 import { useEntrySheet } from "@/components/entry/entry-sheet-provider";
@@ -158,6 +158,11 @@ export function DayView({ date: dateParam }: DayViewProps) {
           {!isToday && (
             <Link href="/today" className={buttonVariants({ variant: "ghost", size: "sm" })}>
               回到今天
+            </Link>
+          )}
+          {isToday && (
+            <Link href="/scan" aria-label="掃發票" title="掃發票" className={buttonVariants({ variant: "outline", size: "icon" })}>
+              <ScanLine className="size-4" aria-hidden />
             </Link>
           )}
           <DayCalendar key={date} ledgerId={ledger.id} date={date} today={today} onSelect={goTo} />

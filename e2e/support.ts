@@ -11,7 +11,11 @@ export const RUN_FILE = "e2e/.auth/run.json";
 export interface RunState {
   startedAt: string;
   monthlySpendingLimit: number | null;
+  carrierBarcode?: string | null;
 }
+
+/** E2E 產生的發票號碼都用 ZZ 字軌，teardown 依此清理 */
+export const E2E_INVOICE_PREFIX = "ZZ";
 
 export function testAccount() {
   const email = process.env.DEV_TEST_EMAIL;
@@ -43,8 +47,8 @@ export async function cleanupE2EData(state?: RunState) {
   const like = `${E2E}%`;
   const counts: Record<string, number> = {};
 
-  const del = async (table: "entries" | "goals" | "goal_deposits" | "recurring_rules" | "category_rules" | "inbox_items", column: string) => {
-    const { data, error } = await supabase.from(table).delete().eq("ledger_id", ledgerId).like(column, like).select("id");
+  const del = async (table: "entries" | "goals" | "goal_deposits" | "recurring_rules" | "category_rules" | "inbox_items", column: string, pattern = like) => {
+    const { data, error } = await supabase.from(table).delete().eq("ledger_id", ledgerId).like(column, pattern).select("id");
     if (error) throw new Error(`清理 ${table} 失敗：${error.message}`);
     counts[table] = (counts[table] ?? 0) + (data?.length ?? 0);
   };
@@ -55,6 +59,9 @@ export async function cleanupE2EData(state?: RunState) {
   await del("recurring_rules", "name");
   await del("category_rules", "pattern");
   await del("inbox_items", "memo");
+  // 掃發票：ZZ 字軌的交易（拆成多筆時備註是品名）與待確認項目
+  await del("entries", "invoice_no", `${E2E_INVOICE_PREFIX}%`);
+  await del("inbox_items", "invoice_no", `${E2E_INVOICE_PREFIX}%`);
 
   if (state) {
     const { data, error } = await supabase.from("budgets").delete().eq("ledger_id", ledgerId).gte("created_at", state.startedAt).select("id");
@@ -65,6 +72,15 @@ export async function cleanupE2EData(state?: RunState) {
       .update({ monthly_spending_limit: state.monthlySpendingLimit })
       .eq("id", ledgerId);
     if (ledgerError) throw new Error(`還原每月總支出上限失敗：${ledgerError.message}`);
+    // 這次跑之後才記住的店家（掃發票會記住統編）
+    const merchants = await supabase.from("merchants").delete().eq("ledger_id", ledgerId).gte("updated_at", state.startedAt).select("id");
+    if (merchants.error) throw new Error(`清理 merchants 失敗：${merchants.error.message}`);
+    counts.merchants = merchants.data?.length ?? 0;
+    if (state.carrierBarcode !== undefined) {
+      const { data: auth } = await supabase.auth.getUser();
+      const { error: profileError } = await supabase.from("profiles").update({ carrier_barcode: state.carrierBarcode }).eq("id", auth.user!.id);
+      if (profileError) throw new Error(`還原手機條碼失敗：${profileError.message}`);
+    }
   }
   await supabase.auth.signOut();
   return counts;

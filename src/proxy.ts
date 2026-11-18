@@ -18,6 +18,7 @@ const PROTECTED_PREFIXES = [
   "/transactions",
   "/inbox",
   "/recurring",
+  "/scan",
   "/accounts",
   "/categories",
   "/reports",
@@ -74,7 +75,7 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // 排除靜態資源與圖片，其餘路徑都經過 proxy
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
+    // 排除靜態資源、圖片與 WASM（掃發票用），其餘路徑都經過 proxy
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|wasm)$).*)",
   ],
 };

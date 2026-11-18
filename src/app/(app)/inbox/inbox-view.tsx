@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { CalendarClock, Inbox } from "lucide-react";
+import { CalendarClock, Inbox, ScanLine } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "cn";
 import { InboxConfirmDialog } from "@/components/inbox/inbox-confirm-dialog";
@@ -99,10 +99,16 @@ export function InboxView() {
         title="待確認"
         description="固定支出到期、掃描或匯入的發票都先放這裡，確認後才記進帳本。"
         actions={
-          <Link href="/recurring" className={buttonVariants({ variant: "outline", size: "sm" })}>
-            <CalendarClock className="size-4" aria-hidden />
-            固定支出
-          </Link>
+          <>
+            <Link href="/scan" className={buttonVariants({ size: "sm" })}>
+              <ScanLine className="size-4" aria-hidden />
+              掃發票
+            </Link>
+            <Link href="/recurring" className={buttonVariants({ variant: "outline", size: "sm" })}>
+              <CalendarClock className="size-4" aria-hidden />
+              固定支出
+            </Link>
+          </>
         }
       />
 

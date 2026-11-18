@@ -569,6 +569,7 @@ export type Database = {
       profiles: {
         Row: {
           animations_enabled: boolean
+          carrier_barcode: string | null
           created_at: string
           display_name: string | null
           id: string
@@ -577,6 +578,7 @@ export type Database = {
         }
         Insert: {
           animations_enabled?: boolean
+          carrier_barcode?: string | null
           created_at?: string
           display_name?: string | null
           id: string
@@ -585,6 +587,7 @@ export type Database = {
         }
         Update: {
           animations_enabled?: boolean
+          carrier_barcode?: string | null
           created_at?: string
           display_name?: string | null
           id?: string
