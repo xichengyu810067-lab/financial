@@ -12,10 +12,10 @@ export default function LoginPage() {
     <Card>
       <CardHeader>
         <CardTitle>登入</CardTitle>
-        <CardDescription>使用 Email 與密碼登入你的帳本。</CardDescription>
+        <CardDescription>用 Google 帳號或 Email 登入你的帳本。</CardDescription>
       </CardHeader>
       <CardContent>
-        <Suspense fallback={<Skeleton className="h-44 w-full" />}>
+        <Suspense fallback={<Skeleton className="h-64 w-full" />}>
           <LoginForm />
         </Suspense>
       </CardContent>

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useActionState } from "react";
 import { MailCheck } from "lucide-react";
+import { GoogleSignIn } from "@/components/auth/google-sign-in";
 import { Field, FormError } from "@/components/form-field";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,9 +21,10 @@ export function SignupForm() {
     <Card>
       <CardHeader>
         <CardTitle>建立帳號</CardTitle>
-        <CardDescription>註冊後會寄一封確認信到你的信箱，點擊連結即可開始使用。</CardDescription>
+        <CardDescription>用 Google 帳號一鍵註冊；或用 Email 註冊，會寄一封確認信，點連結即可開始使用。</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="grid gap-4">
+        <GoogleSignIn />
         <form action={formAction} className="grid gap-4">
           <FormError message={state?.error} />
           <Field label="顯示名稱" htmlFor="displayName" error={state?.fieldErrors?.displayName} hint="選填，之後可在設定頁修改">

@@ -2,6 +2,7 @@
 
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { getSupabaseEnv } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
 import { translateAuthError } from "./errors";
 import {
@@ -101,6 +102,42 @@ export async function signIn(_prev: AuthState, formData: FormData): Promise<Auth
   if (error) return { error: translateAuthError(error), values };
 
   redirect(await safeNext(formData.get("next")));
+}
+
+/** Supabase 後台有沒有開 Google；查不到（網路問題）時當作有開，交給 Supabase 處理 */
+async function isGoogleEnabled(): Promise<boolean> {
+  const { url, key } = getSupabaseEnv();
+  try {
+    const res = await fetch(`${url}/auth/v1/settings`, { headers: { apikey: key }, cache: "no-store" });
+    if (!res.ok) return true;
+    const settings = (await res.json()) as { external?: Record<string, boolean> };
+    return settings.external?.google !== false;
+  } catch {
+    return true;
+  }
+}
+
+/**
+ * 用 Google 登入／註冊：先確認後台已啟用，再導到 Google 授權頁。
+ * 授權完回到 /auth/callback（帶 via=google 讓錯誤訊息知道是 Google 流程），
+ * 同信箱的 Email 帳號由 Supabase 自動連結成同一個使用者。
+ */
+export async function signInWithGoogle(_prev: AuthState, formData: FormData): Promise<AuthState> {
+  if (!(await isGoogleEnabled())) return { error: "Google 登入尚未啟用，請先用 Email 登入" };
+
+  const next = await safeNext(formData.get("next"));
+  const supabase = await createClient();
+  const origin = await getOrigin();
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo: `${origin}/auth/callback?next=${encodeURIComponent(next)}&via=google`,
+      queryParams: { prompt: "select_account" },
+    },
+  });
+  if (error || !data.url) return { error: error ? translateAuthError(error) : "Google 登入失敗，請再試一次" };
+
+  redirect(data.url);
 }
 
 export async function signOut(): Promise<void> {
