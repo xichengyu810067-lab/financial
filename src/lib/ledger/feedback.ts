@@ -8,9 +8,10 @@ import type { Account } from "./types";
  *   收入、轉帳到儲蓄或投資帳戶 → 存錢（硬幣掉進撲滿）
  *   一般支出、其他轉帳 → 「已記」印章
  *   支出讓本月速度超過基準線 30%，或是單筆大額 → 紙鈔飛走 + 橙色印章 + 一句提醒
+ *   轉帳或存入讓儲蓄目標第一次達標 → 加強版撲滿（更多硬幣 + 「達標」章），由 goal-model 判斷
  */
 
-export type FeedbackKind = "saving" | "stamp" | "overspend";
+export type FeedbackKind = "saving" | "stamp" | "overspend" | "achieved";
 
 export interface Feedback {
   kind: FeedbackKind;

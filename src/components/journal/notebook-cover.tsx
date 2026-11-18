@@ -9,6 +9,8 @@ interface NotebookCoverProps {
   /** ledgers.cover_color */
   color: string | null | undefined;
   year?: number;
+  /** 標籤下方的一行小字，例如「日本旅行 62%」；沒有就不畫 */
+  goalLine?: string | null;
   size?: "sm" | "md" | "lg";
   className?: string;
 }
@@ -17,7 +19,7 @@ interface NotebookCoverProps {
  * 筆記本封面：顏色 + 材質紋理、書背、主題漸層的鬆緊帶、書籤、頁緣，
  * 中間一張手寫標籤寫帳本名稱與標語。封面頁與設定頁的預覽共用。
  */
-export function NotebookCover({ name, slogan, material, color, year, size = "lg", className }: NotebookCoverProps) {
+export function NotebookCover({ name, slogan, material, color, year, goalLine, size = "lg", className }: NotebookCoverProps) {
   const palette = coverColorOf(color);
   const texture = `cover-${coverMaterialOf(material)}`;
   const label = {
@@ -63,6 +65,16 @@ export function NotebookCover({ name, slogan, material, color, year, size = "lg"
         {year && size !== "sm" && <div className="text-[11px] tracking-[0.2em] opacity-70">{year}</div>}
         <div className={cn("font-hand font-bold leading-tight", nameClass, size !== "sm" && "mt-1")}>{name}</div>
         {slogan && <div className={cn("mt-2 font-hand opacity-75", sloganClass)}>{slogan}</div>}
+        {goalLine && size !== "sm" && (
+          <div
+            className={cn(
+              "absolute inset-x-0 top-full mt-3 truncate text-center font-hand font-bold text-white/90 drop-shadow-[0_1px_2px_rgba(0,0,0,0.35)]",
+              size === "lg" ? "text-[14px] sm:text-[16px]" : "text-[12px]",
+            )}
+          >
+            {goalLine}
+          </div>
+        )}
       </div>
     </div>
   );
