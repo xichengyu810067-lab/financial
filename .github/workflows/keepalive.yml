@@ -1,0 +1,30 @@
+name: Keep Supabase awake
+
+# Supabase 免費方案一週沒有活動就會暫停專案。每天用 publishable key 查一次資料庫，
+# 讓專案保持活躍。anon 在 RLS 下只會拿到空陣列，但這個查詢會實際碰到資料庫。
+# 需要 repository variables：SUPABASE_URL、SUPABASE_PUBLISHABLE_KEY（publishable key 本來就公開在前端）。
+# 注意：GitHub 會在 repo 60 天沒有活動後自動停用排程，屆時到 Actions 頁面重新啟用即可。
+
+on:
+  schedule:
+    - cron: "17 3 * * *" # 每天 UTC 03:17（台灣 11:17）
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 查一次資料庫
+        env:
+          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_PUBLISHABLE_KEY" ]; then
+            echo "請先在 repository variables 設定 SUPABASE_URL 與 SUPABASE_PUBLISHABLE_KEY"
+            exit 1
+          fi
+          code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 \
+            "$SUPABASE_URL/rest/v1/ledgers?select=id&limit=1" \
+            -H "apikey: $SUPABASE_PUBLISHABLE_KEY")
+          echo "HTTP $code"
+          test "$code" = "200"

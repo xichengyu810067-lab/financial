@@ -22,3 +22,20 @@ jobs:
       - run: npm run lint
       - run: npm test
       - run: npm run build
+
+  rls:
+    # RLS 與函式權限測試：在 CI 裡起一個本機 Supabase Postgres、套用 migrations，
+    # 跑 supabase/tests/rls.sql。測試以 ALL_OK 例外結束並回滾，看到 ALL_OK 才算通過。不連正式資料庫。
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: 啟動本機 Postgres 並套用 migrations
+        run: supabase db start
+      - name: RLS 與函式權限測試
+        run: |
+          psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -v ON_ERROR_STOP=1 -f supabase/tests/rls.sql > rls.out 2>&1 || true
+          cat rls.out
+          grep -q 'ALL_OK' rls.out
