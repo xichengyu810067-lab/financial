@@ -590,6 +590,7 @@ export type Database = {
           type: Database["public"]["Enums"]["account_type"]
         }[]
       }
+      restore_ledger: { Args: { p_data: Json; p_ledger: string }; Returns: Json }
       save_entry: { Args: { p_entry: Json; p_lines: Json }; Returns: string }
       seed_ledger: {
         Args: { p_name: string; p_owner: string }

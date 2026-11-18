@@ -106,6 +106,15 @@
 - **踩到的坑**：Supabase 原本的 Redirect URLs 只有不帶萬用字元的 `…/auth/callback`，比對不到帶參數的 `/auth/callback?next=…&via=google`。正式站因為跟 Site URL 同網域所以不受影響，但從 `localhost` 出發會被退回 Site URL（正式站首頁），看起來像「登入沒成功」。補上 `http://localhost:3000/**`、`https://financial-xicheng.vercel.app/**`、`https://financial-*-xicheng.vercel.app/**` 後正常。
 - **驗收**：本機用站長的 Google 帳號登入，回到原本的封面與帳本；資料庫確認沒有新增使用者，原帳號的登入方式變成 `email` + `google`（Supabase 自動連結）。
 
+### PR C 備份與還原（2026-11-18 實作）
+
+- 設定頁新增「備份與還原」卡（`src/app/(app)/settings/backup-card.tsx`）：「下載備份」產生 `帳本備份-YYYY-MM-DD.json`；「選擇備份檔…」→ 瀏覽器端驗證 → 顯示摘要（帳本、備份時間、帳戶與類別數、交易筆數與日期範圍、預算與目標）→「用這份備份還原…」→ 確認對話框（可先下載目前的備份）→ 還原成功後重置所有查詢並導到今天這一頁；失敗時顯示「還原失敗，帳本維持原樣」。
+- 匯出（`src/lib/ledger/backup.ts`）在瀏覽器端用 RLS 讀取；PostgREST 一次最多 1000 列，交易與分錄分頁抓。每列去掉 `ledger_id`／`created_by`，分錄、預算、存入連 id 一起去掉（還原會重建）。
+- 格式、驗證、摘要是純函式（`src/lib/ledger/backup-model.ts`，22 項單元測試）：zod 檢查欄位；app／版本；id 不重複；必須有「期初餘額」科目；上層類別、交易、分錄、預算（只能掛費用類別）、目標（只能綁資產帳戶）、存入的參照都要找得到；每筆交易至少兩行、每行只有借或貸、借貸相等（用分比對避免浮點誤差）。
+- Migration `20261118144444_milestone_6_restore_ledger.sql`：`restore_ledger(p_ledger, p_data)`，`security invoker`、只授權 `authenticated`。再驗一次 app／版本／格式／id 重複／參照，接著刪掉目前帳本的存入、目標、預算、交易（分錄連帶）、子類別、科目，更新帳本設定，然後依序重建科目（先父後子）、交易、分錄、預算、目標、存入；舊 id → 新 id 用 `jsonb_object_agg(..., gen_random_uuid())` 一次對應好，整個流程是集合式 insert，不逐筆迴圈。借貸平衡交給既有的 deferred constraint trigger 在 commit 時檢查。個人資料（顯示名稱、標語、動畫開關）屬於帳號，匯出但不還原。
+- `supabase/tests/restore.sql`（12 項，也放進 CI 的 `rls` job）：改動後還原回到備份狀態（以名稱比對科目、餘額、交易、預算、目標、存入、帳本設定）、id 重新產生、同一份還原兩次、不能還原到別人的帳本、借貸不平衡／參照不完整／版本不對都被擋下且帳本不變、另一位使用者還原同一份備份互不影響、anon 不能呼叫。已在正式資料庫以回滾方式跑過，`ALL_OK`。
+- 本機畫面驗證：下載的檔案內容與資料庫筆數一致、沒有 `ledger_id`、每筆借貸平衡；上傳壞檔顯示「備份檔裡有借貸不平衡的交易（日期「備註」）」；上傳正常檔顯示摘要與確認對話框（按取消，沒有實際覆蓋正式帳本）。
+
 ## 不在此里程碑
 
 多帳本切換、Email 提醒、匯入其他記帳 App 的資料、行動 App。

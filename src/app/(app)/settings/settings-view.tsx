@@ -18,6 +18,7 @@ import { ACCENTS, COVER_COLORS, COVER_MATERIALS, coverColorOf, coverMaterialOf }
 import { translateDbError } from "@/lib/ledger/errors";
 import { useLedger, useProfile, useUpdateLedger, useUpdateProfile } from "@/lib/ledger/queries";
 import type { Ledger, Profile } from "@/lib/ledger/types";
+import { BackupCard } from "./backup-card";
 
 export function SettingsView() {
   const { data: ledger } = useLedger();
@@ -81,7 +82,7 @@ function SettingsForm({ ledger, profile }: { ledger: Ledger; profile: Profile & 
 
   return (
     <>
-      <PageHeader title="設定" description="帳本、個人資料與外觀。" />
+      <PageHeader title="設定" description="帳本、個人資料、外觀與備份。" />
       <div className="grid gap-6">
         <Card>
           <form onSubmit={saveLedger}>
@@ -136,6 +137,8 @@ function SettingsForm({ ledger, profile }: { ledger: Ledger; profile: Profile & 
         </Card>
 
         <AppearanceCard profile={profile} />
+
+        <BackupCard ledgerId={ledger.id} />
 
         <Card>
           <CardHeader>
