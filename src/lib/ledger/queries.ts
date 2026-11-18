@@ -237,7 +237,7 @@ export function useUpdateLedger() {
 export function useUpdateProfile() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (input: { id: string; display_name?: string; slogan?: string | null; animations_enabled?: boolean }) => {
+    mutationFn: async (input: { id: string; display_name?: string; slogan?: string | null; animations_enabled?: boolean; carrier_barcode?: string | null }) => {
       const supabase = createClient();
       const { id, ...patch } = input;
       unwrap(await supabase.from("profiles").update(patch).eq("id", id));

@@ -41,7 +41,7 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: `npx next dev --port ${PORT}`,
+    command: `node scripts/copy-zxing-wasm.mjs && npx next dev --port ${PORT}`,
     url: baseURL,
     reuseExistingServer: true,
     timeout: 180_000,

@@ -47,3 +47,6 @@ next-env.d.ts
 /e2e/.auth/
 /playwright-report/
 /test-results/
+
+# zxing-wasm 的 WASM（predev／prebuild 從 node_modules 複製）
+/public/zxing/

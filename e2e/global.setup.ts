@@ -10,8 +10,13 @@ setup("檢查測試帳號、清掉上次殘留、記下原始狀態並登入一�
 
   const { supabase, ledgerId } = await testClient();
   const { data: ledger } = await supabase.from("ledgers").select("monthly_spending_limit").eq("id", ledgerId).single();
+  const { data: profile } = await supabase.from("profiles").select("carrier_barcode").single();
   await supabase.auth.signOut();
-  const state: RunState = { startedAt: new Date().toISOString(), monthlySpendingLimit: ledger?.monthly_spending_limit ?? null };
+  const state: RunState = {
+    startedAt: new Date().toISOString(),
+    monthlySpendingLimit: ledger?.monthly_spending_limit ?? null,
+    carrierBarcode: profile?.carrier_barcode ?? null,
+  };
   mkdirSync("e2e/.auth", { recursive: true });
   writeFileSync(RUN_FILE, JSON.stringify(state, null, 2));
 
