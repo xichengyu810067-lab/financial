@@ -155,3 +155,26 @@ describe("inboxTitle", () => {
     expect(inboxTitle(item({ memo: null }))).toBe("固定支出");
   });
 });
+
+describe("splitsFromInvoice：折抵", () => {
+  it("負的品項併進前一個品項", () => {
+    const withDiscount = invoice({
+      amount: 290,
+      items: [
+        { name: "便當", qty: 1, price: 100 },
+        { name: "便當折價", qty: 1, price: -10 },
+        { name: "牙膏", qty: 2, price: 100 },
+      ],
+    });
+    expect(splitsFromInvoice(withDiscount)).toEqual([
+      { categoryId: "food", amount: "90", memo: "便當" },
+      { categoryId: "food", amount: "200", memo: "牙膏 ×2" },
+    ]);
+    expect(validateDraft(withDiscount, { ...initialDraft(withDiscount), splits: splitsFromInvoice(withDiscount) })).toBeNull();
+  });
+
+  it("併完只剩一筆或有非正數就不拆", () => {
+    const one = invoice({ amount: 161, items: [{ name: "汽油", qty: 1, price: 165 }, { name: "折抵", qty: 1, price: -4 }] });
+    expect(splitsFromInvoice(one)).toEqual([{ categoryId: "food", amount: "161", memo: "" }]);
+  });
+});
