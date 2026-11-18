@@ -106,7 +106,7 @@
 - **踩到的坑**：Supabase 原本的 Redirect URLs 只有不帶萬用字元的 `…/auth/callback`，比對不到帶參數的 `/auth/callback?next=…&via=google`。正式站因為跟 Site URL 同網域所以不受影響，但從 `localhost` 出發會被退回 Site URL（正式站首頁），看起來像「登入沒成功」。補上 `http://localhost:3000/**`、`https://financial-xicheng.vercel.app/**`、`https://financial-*-xicheng.vercel.app/**` 後正常。
 - **驗收**：本機用站長的 Google 帳號登入，回到原本的封面與帳本；資料庫確認沒有新增使用者，原帳號的登入方式變成 `email` + `google`（Supabase 自動連結）。
 
-### PR C 備份與還原（2026-11-18 實作）
+### PR C 備份與還原（2026-11-18 實作、已合併 #15）
 
 - 設定頁新增「備份與還原」卡（`src/app/(app)/settings/backup-card.tsx`）：「下載備份」產生 `帳本備份-YYYY-MM-DD.json`；「選擇備份檔…」→ 瀏覽器端驗證 → 顯示摘要（帳本、備份時間、帳戶與類別數、交易筆數與日期範圍、預算與目標）→「用這份備份還原…」→ 確認對話框（可先下載目前的備份）→ 還原成功後重置所有查詢並導到今天這一頁；失敗時顯示「還原失敗，帳本維持原樣」。
 - 匯出（`src/lib/ledger/backup.ts`）在瀏覽器端用 RLS 讀取；PostgREST 一次最多 1000 列，交易與分錄分頁抓。每列去掉 `ledger_id`／`created_by`，分錄、預算、存入連 id 一起去掉（還原會重建）。
