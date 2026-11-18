@@ -82,6 +82,18 @@
 | C | `m6-backup` | 匯出、匯入驗證與摘要、`restore_ledger` RPC | 匯出 → 改幾筆 → 匯入後回到匯出時的狀態；壞檔被擋下且帳本不變 |
 | D | `m6-e2e` | Playwright 設定與情境、清理、README 完整版 | `npm run e2e` 全部通過且跑完帳本沒有 `[E2E]` 資料 |
 
+## 實作備註
+
+### PR A 安全審查（2026-11-18 實作）
+
+- **Next.js 16.4.2 → 16.4.6**（`eslint-config-next` 同步）：修正 GHSA-mfr8-8qww-v76h、GHSA-vc7v-qv4w-wrv8（`use cache` 跨 root params 的快取資訊外洩，影響到 16.4.4；本專案沒有用 `use cache`／`unstable_cache`）。升級後 build 不再出現安全性提示，第一次就以結束碼 0 完成。
+- **沒有一起做 `npm audit fix`**：試過會把 lockfile 裡各平台的 `@unrs/resolver-binding-*` 選用套件（含 CI 的 linux-x64-gnu）一起拿掉，可能讓 `npm ci` 壞掉，所以還原。剩下的 22 條都在開發工具（shadcn CLI、vitest／vite、typescript-eslint、eslint-config-next 帶的 glob 套件），不會進到網站；`npm audit` 建議的修法是降回舊大版本（vitest 3、shadcn 2、eslint-config-next 14），不採用，等上游更新。
+- Migration `20261118001623_milestone_6_security.sql`：收回 `create_ledger_with_defaults` 的 `authenticated` 執行權限。之後 Supabase advisors 只剩「外洩密碼防護未開啟」。
+- **RLS 測試抓到一個缺口**：`budgets` 可以在自己的帳本建一列、卻掛在別人帳本的類別上（讀不到別人的資料，但參照錯亂）。Migration `20261118001914_milestone_6_budget_refs.sql` 補 `validate_budget_category` 觸發器（同一本帳本的費用類別才行）；套用前確認現有資料沒有違反。
+- `supabase/tests/rls.sql`：兩位測試使用者，42 項檢查（本人讀得到；他人讀不到／改不了／刪不掉 8 張表與檢視；8 個報表統計函式拿不到數字；17 種寫進別人帳本或掛到別人科目、用別人 id 呼叫 RPC、呼叫不開放函式都被擋；anon 讀不到 9 張表、呼叫不了 13 個函式）。已在正式資料庫以回滾方式跑過，`ALL_OK`。
+- CI 新增 `rls` job：`supabase db start` 起本機 Postgres 套 migrations，`psql` 跑 `rls.sql`，看到 `ALL_OK` 才通過。`supabase/config.toml` 補 `project_id = "financial"`（CLI 需要）。
+- `.github/workflows/keepalive.yml`：每天 UTC 03:17 與手動觸發，用 publishable key 查一次 `ledgers`；本機以同一個查詢測過回傳 200。需要 repository variables `SUPABASE_URL`、`SUPABASE_PUBLISHABLE_KEY`；排程只在合併到 main 後生效。
+
 ## 不在此里程碑
 
 多帳本切換、Email 提醒、匯入其他記帳 App 的資料、行動 App。
