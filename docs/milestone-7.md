@@ -65,7 +65,7 @@
 
 ## 實作備註
 
-### PR A 待確認匣與固定支出（2026-11-19 實作）
+### PR A 待確認匣與固定支出（2026-11-19 實作、已合併 #17）
 
 - Migration `20261118155227_milestone_7_inbox.sql`：
   - 新表 `recurring_rules`、`category_rules`、`merchants`、`inbox_items` 與 `entries.invoice_no`，全部 RLS（`is_ledger_owner`），並用 trigger 擋跨帳本參照與型別錯誤（例如固定收入掛費用類別、轉帳兩邊相同）。
