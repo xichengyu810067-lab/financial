@@ -16,6 +16,8 @@ const PROTECTED_PREFIXES = [
   "/months",
   "/dashboard",
   "/transactions",
+  "/inbox",
+  "/recurring",
   "/accounts",
   "/categories",
   "/reports",

@@ -17,9 +17,11 @@
 | 記一筆 | 每頁右下角 | 支出／收入／轉帳；金額可打算式（`120+35`）；分錄預覽；記完播動畫 |
 | 本月 | `/month`、`/months/YYYY-MM` | 月章節頁：還能花多少、各類別進度與當月額度、圖表 |
 | 交易清單 | `/transactions` | 依月份列出、篩選、搜尋備註、編輯、複製、批次刪除 |
+| 待確認匣 | `/inbox` | 固定支出到期、掃描或匯入的發票先放這裡；確認、修改金額、拆成多筆、略過、批次確認 |
+| 固定支出 | `/recurring` | 房租、訂閱、薪水等每月／每週／每年的帳；到期自動放進待確認匣，可暫停 |
 | 帳戶／類別 | `/accounts`、`/categories` | 圖示、顏色、排序、子類別、封存、類別每月基準線 |
 | 報表 | `/reports` | 損益表、資產負債表、現金流量表；日／週／月／季／年／自訂期間；點科目看明細；上方附圖 |
-| 設定 | `/settings` | 帳本、封面、個人資料、外觀（深淺色、主題色、記帳動畫）、**備份與還原** |
+| 設定 | `/settings` | 帳本、封面、個人資料、外觀（深淺色、主題色、記帳動畫）、自動分類規則、**備份與還原** |
 
 ## 技術架構
 
@@ -44,7 +46,7 @@
 
 ### 資料表（`supabase/migrations/`）
 
-`profiles`、`ledgers`、`accounts`、`entries`、`entry_lines`、`budgets`、`goals`、`goal_deposits`，全部啟用 RLS，只有帳本擁有者能讀寫。
+`profiles`、`ledgers`、`accounts`、`entries`、`entry_lines`、`budgets`、`goals`、`goal_deposits`、`recurring_rules`、`inbox_items`、`category_rules`、`merchants`，全部啟用 RLS，只有帳本擁有者能讀寫。
 報表與統計由 SQL 函式計算（`report_income_statement`、`report_balance_sheet`、`report_cash_flow`、`monthly_summary`、`goal_progress` 等），一律 `security invoker`，同樣受 RLS 保護。
 
 ## 本機開發
@@ -102,8 +104,9 @@ npm run build   # 正式建置
 
 - `rls.sql`：兩位使用者互相讀不到、改不了、刪不掉、寫不進對方帳本；anon 什麼都拿不到
 - `restore.sql`：備份還原回到備份時的狀態、壞檔被擋下且帳本不變、不能還原到別人的帳本
+- `inbox.sql`：固定支出的週期日期、到期產生待確認項目、確認（改金額、拆成多筆）、發票去重、分類建議
 
-兩個檔案都在單一交易裡建立測試資料，全部通過時以 `ALL_OK` 例外結束並回滾，不留資料。CI 會用 Supabase CLI 起本機 Postgres 自動跑；手動跑：
+三個檔案都在單一交易裡建立測試資料，全部通過時以 `ALL_OK` 例外結束並回滾，不留資料。CI 會用 Supabase CLI 起本機 Postgres 自動跑；手動跑：
 
 ```bash
 psql "$DB_URL" -v ON_ERROR_STOP=1 -f supabase/tests/rls.sql 2>&1 | grep ALL_OK
@@ -116,12 +119,12 @@ npx playwright install chromium   # 第一次
 npm run e2e                       # 自動啟動 next dev，跑完看 playwright-report/
 ```
 
-涵蓋：記一筆支出 → 今天這一頁與交易清單 → 編輯 → 刪除；本月還能花與類別當月額度；報表六種期間與三張圖；儲蓄目標存入到達標再封存；下載備份並檢查 JSON；登入、使用者選單、登出。
+涵蓋：記一筆支出 → 今天這一頁與交易清單 → 編輯 → 刪除；本月還能花與類別當月額度；報表六種期間與三張圖；儲蓄目標存入到達標再封存；下載備份並檢查 JSON；固定支出到期進待確認匣、改金額確認入帳；自動分類規則；登入、使用者選單、登出。
 
 注意事項：
 
 - **E2E 連正式 Supabase**，用 `.env.local` 的 `DEV_TEST_EMAIL` 登入，只能是專用測試帳號（信箱網域不是 `.test` 會拒絕執行）
-- 測試建立的交易、目標、存入都以 `[E2E]` 開頭；開始前先清一次殘留，跑完自動刪除，並還原每月總支出上限、刪掉這次新增的預算
+- 測試建立的交易、目標、存入、固定支出、分類規則都以 `[E2E]` 開頭；開始前先清一次殘留，跑完自動刪除，並還原每月總支出上限、刪掉這次新增的預算
 - 因為會寫正式資料庫，只在本機手動跑，**不放進 GitHub CI**
 - 不測註冊（會真的寄信）、Google 登入（要真的 Google 帳號）、還原（會覆蓋測試帳本；由單元測試與 `restore.sql` 涵蓋）
 
@@ -129,15 +132,15 @@ npm run e2e                       # 自動啟動 next dev，跑完看 playwright
 
 設定頁的「備份與還原」：
 
-- **下載備份**：整本帳本（帳戶、類別、交易、預算、目標、存入、帳本設定）存成 `帳本備份-YYYY-MM-DD.json`，建議每月存一份到雲端硬碟
+- **下載備份**：整本帳本（帳戶、類別、交易、預算、目標、存入、固定支出、分類規則、帳本設定）存成 `帳本備份-YYYY-MM-DD.json`，建議每月存一份到雲端硬碟
 - **從備份還原**：選擇備份檔 → 瀏覽器先檢查格式、參照與借貸平衡 → 顯示摘要 → 確認後由 `restore_ledger` 在同一個交易裡清空並重建目前帳本（所有 id 重新產生）；任何一步失敗整個回滾，帳本維持原樣
-- 個人資料（顯示名稱、標語、動畫開關）會匯出但不會被還原
+- 個人資料（顯示名稱、標語、動畫開關）會匯出但不會被還原；待確認匣裡還沒確認的項目與店家記憶不備份，還原時會清空
 
 ## 部署
 
 - **Vercel**：專案連結本 repo，push `main` 部署正式環境，PR 產生 preview（preview 需 Vercel 登入才能看）；環境變數同 `.env.local` 的兩個 `NEXT_PUBLIC_*`
 - **GitHub Actions**：
-  - `ci.yml`：lint、test、build；`rls` job 用 Supabase CLI 跑兩個 SQL 測試
+  - `ci.yml`：lint、test、build；`rls` job 用 Supabase CLI 跑三個 SQL 測試
   - `keepalive.yml`：每天查一次資料庫，避免 Supabase 免費方案閒置被暫停；需要 repository variables `SUPABASE_URL`、`SUPABASE_PUBLISHABLE_KEY`
 
 ## 已知限制

@@ -124,6 +124,8 @@ describe("parseBackup", () => {
       budgetCount: 1,
       goalCount: 2,
       depositCount: 1,
+      recurringCount: 0,
+      categoryRuleCount: 0,
     });
   });
 
@@ -199,5 +201,44 @@ describe("parseBackup", () => {
     const result = parseBackup(text(backup));
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error).toContain(message);
+  });
+});
+
+describe("固定支出與分類規則（里程碑 7）", () => {
+  const withRules = () =>
+    buildBackup({
+      ...parts(),
+      recurring_rules: [
+        {
+          id: "r1", ledger_id: L, name: "房租", kind: "expense", amount: 12000, amount_varies: false, from_account_id: "cash", to_account_id: null,
+          category_id: "food", memo: null, frequency: "monthly", day_of_month: 5, weekday: null, month_of_year: null, next_date: "2026-12-05",
+          is_active: true, created_at: ts,
+        },
+      ],
+      category_rules: [{ id: "c1", ledger_id: L, pattern: "全家", category_id: "food", account_id: "cash", sort_order: 0, created_at: ts }],
+    });
+
+  it("匯出時去掉 id 與 ledger_id，讀回來摘要有數量", () => {
+    const backup = withRules();
+    expect(backup.recurring_rules[0]).not.toHaveProperty("id");
+    expect(backup.category_rules[0]).not.toHaveProperty("ledger_id");
+    const result = parseBackup(text(backup));
+    expect(result.ok && result.summary.recurringCount).toBe(1);
+    expect(result.ok && result.summary.categoryRuleCount).toBe(1);
+  });
+
+  it("舊備份沒有這兩項也能讀", () => {
+    const old = exported() as Record<string, unknown>;
+    delete old.recurring_rules;
+    delete old.category_rules;
+    const result = parseBackup(text(old));
+    expect(result.ok && result.backup.recurring_rules).toEqual([]);
+  });
+
+  it("規則指到不存在的類別 → 擋下", () => {
+    const backup = withRules();
+    backup.category_rules[0] = { ...backup.category_rules[0], category_id: "nope" };
+    const result = parseBackup(text(backup));
+    expect(!result.ok && result.error).toContain("分類規則");
   });
 });

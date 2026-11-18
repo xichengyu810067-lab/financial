@@ -16,10 +16,11 @@ declare
   u2 uuid := gen_random_uuid();
   l1 uuid; l2 uuid;
   cash1 uuid; food1 uuid; cash2 uuid; food2 uuid;
-  e1 uuid; g1 uuid;
+  e1 uuid; g1 uuid; r1 uuid; i1 uuid;
   month_start date := date_trunc('month', current_date)::date;
   t text; stmt text; n bigint; amount numeric;
-  tables text[] := array['ledgers', 'accounts', 'entries', 'entry_lines', 'budgets', 'goals', 'goal_deposits'];
+  tables text[] := array['ledgers', 'accounts', 'entries', 'entry_lines', 'budgets', 'goals', 'goal_deposits',
+                          'recurring_rules', 'category_rules', 'merchants', 'inbox_items'];
   checked int := 0;
 begin
   -- ---------------------------------------------------------------------------
@@ -49,6 +50,13 @@ begin
   insert into public.budgets (ledger_id, category_id, month, amount) values (l1, food1, month_start, 500);
   insert into public.goals (ledger_id, name, target_amount) values (l1, '手動目標', 1000) returning id into g1;
   insert into public.goal_deposits (ledger_id, goal_id, amount) values (l1, g1, 300);
+  -- 里程碑 7：固定支出、自動分類規則、店家記憶、待確認項目
+  insert into public.recurring_rules (ledger_id, name, amount, from_account_id, category_id, frequency, day_of_month, next_date)
+  values (l1, '房租', 9000, cash1, food1, 'monthly', 1, current_date) returning id into r1;
+  insert into public.category_rules (ledger_id, pattern, category_id) values (l1, '全家', food1);
+  insert into public.merchants (ledger_id, merchant_key, name, last_category_id) values (l1, '全家', '全家', food1);
+  insert into public.inbox_items (ledger_id, source, entry_date, amount, merchant_name, invoice_no)
+  values (l1, 'invoice_qr', current_date, 85, '全家', 'AB12345678') returning id into i1;
 
   -- 本人看得到自己的每一張表
   foreach t in array tables loop
@@ -106,6 +114,8 @@ begin
   if n <> 0 then raise exception 'FAIL 他人拿得到類別統計'; end if;
   select count(*) into n from public.goal_progress(l1, current_date);
   if n <> 0 then raise exception 'FAIL 他人拿得到目標進度'; end if;
+  select count(*) into n from public.suggest_category(l1, '全家', null);
+  if n <> 0 then raise exception 'FAIL 他人拿得到分類建議'; end if;
   checked := checked + 1;
 
   -- 寫進別人的帳本、或把自己的資料掛到別人的科目上：一律被擋
@@ -117,10 +127,19 @@ begin
     format('insert into public.budgets (ledger_id, category_id, month, amount) values (%L, %L, %L, 1)', l1, food1, month_start),
     format('insert into public.goals (ledger_id, name, target_amount) values (%L, %L, 1)', l1, '入侵目標'),
     format('insert into public.goal_deposits (ledger_id, goal_id, amount) values (%L, %L, 1)', l1, g1),
+    format('insert into public.recurring_rules (ledger_id, name, amount, from_account_id, category_id, frequency, day_of_month, next_date) values (%L, %L, 1, %L, %L, %L, 1, current_date)', l1, '入侵', cash1, food1, 'monthly'),
+    format('insert into public.category_rules (ledger_id, pattern, category_id) values (%L, %L, %L)', l1, '入侵', food1),
+    format('insert into public.merchants (ledger_id, merchant_key) values (%L, %L)', l1, '入侵'),
+    format('insert into public.inbox_items (ledger_id, source, entry_date, amount) values (%L, %L, current_date, 1)', l1, 'invoice_qr'),
     -- 自己的帳本，但參照 u1 的科目或目標
     format('insert into public.budgets (ledger_id, category_id, month, amount) values (%L, %L, %L, 1)', l2, food1, month_start),
     format('insert into public.goals (ledger_id, name, target_amount, account_id) values (%L, %L, 1, %L)', l2, '綁別人的帳戶', cash1),
     format('insert into public.goal_deposits (ledger_id, goal_id, amount) values (%L, %L, 1)', l2, g1),
+    format('insert into public.recurring_rules (ledger_id, name, amount, from_account_id, category_id, frequency, day_of_month, next_date) values (%L, %L, 1, %L, %L, %L, 1, current_date)', l2, '掛別人的科目', cash1, food1, 'monthly'),
+    format('insert into public.category_rules (ledger_id, pattern, category_id) values (%L, %L, %L)', l2, '掛別人的類別', food1),
+    format('insert into public.merchants (ledger_id, merchant_key, last_category_id) values (%L, %L, %L)', l2, '掛別人的類別', food1),
+    format('insert into public.inbox_items (ledger_id, source, entry_date, amount, category_id) values (%L, %L, current_date, 1, %L)', l2, 'invoice_qr', food1),
+    format('insert into public.inbox_items (ledger_id, source, entry_date, amount, recurring_rule_id) values (%L, %L, current_date, 1, %L)', l2, 'recurring', r1),
     format('select public.save_entry(%L::jsonb, %L::jsonb)',
       json_build_object('ledger_id', l2, 'kind', 'expense', 'entry_date', current_date, 'amount', 5, 'from_account_id', cash1, 'category_id', food1),
       json_build_array(json_build_object('account_id', food1, 'debit', 5, 'credit', 0), json_build_object('account_id', cash1, 'debit', 0, 'credit', 5))),
@@ -133,6 +152,9 @@ begin
       json_build_array(json_build_object('account_id', food1, 'debit', 1, 'credit', 0), json_build_object('account_id', cash1, 'debit', 0, 'credit', 1))),
     format('select public.set_opening_balance(%L, 999)', cash1),
     format('select public.move_account(%L, %L)', food1, 'down'),
+    format('select public.generate_recurring_items(%L, current_date)', l1),
+    format('select public.confirm_inbox_item(%L, %L::jsonb)', i1, json_build_object('from_account_id', cash2, 'splits', json_build_array(json_build_object('category_id', food2, 'amount', 85)))),
+    format('select public.restore_ledger(%L, %L::jsonb)', l1, '{"app":"financial","version":1,"ledger":{}}'),
     -- 不開放呼叫的函式
     'select public.create_ledger_with_defaults(''多開的帳本'')',
     format('select public.seed_ledger(%L, %L)', u2, '多開的帳本')
@@ -174,7 +196,11 @@ begin
     format('select public.set_opening_balance(%L, 1)', cash1),
     format('select public.move_account(%L, %L)', food1, 'up'),
     format('select public.complete_onboarding(%L, current_date, %L::jsonb)', 'x', '[]'),
-    'select public.create_ledger_with_defaults(''x'')'
+    'select public.create_ledger_with_defaults(''x'')',
+    format('select public.generate_recurring_items(%L, current_date)', l1),
+    format('select public.confirm_inbox_item(%L, %L::jsonb)', i1, '{"splits":[]}'),
+    format('select public.suggest_category(%L, %L, null)', l1, '全家'),
+    format('select public.restore_ledger(%L, %L::jsonb)', l1, '{}')
   ] loop
     begin
       execute stmt;

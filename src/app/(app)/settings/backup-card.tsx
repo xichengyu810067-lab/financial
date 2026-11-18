@@ -69,7 +69,7 @@ export function BackupCard({ ledgerId }: { ledgerId: string }) {
     <Card>
       <CardHeader>
         <CardTitle>備份與還原</CardTitle>
-        <CardDescription>整本帳本（帳戶、類別、交易、預算、目標與帳本設定）存成一個 JSON 檔；換電腦或資料出錯時可以從備份還原。</CardDescription>
+        <CardDescription>整本帳本（帳戶、類別、交易、預算、目標、固定支出、分類規則與帳本設定）存成一個 JSON 檔；換電腦或資料出錯時可以從備份還原。</CardDescription>
       </CardHeader>
       <CardContent className="grid gap-6 pt-4 sm:grid-cols-2">
         <section className="grid content-start gap-2">
@@ -153,6 +153,7 @@ function SummaryList({ summary }: { summary: BackupSummary }) {
     ["帳戶與類別", `帳戶 ${summary.accountCount} 個、類別 ${summary.categoryCount} 個`],
     ["交易", summary.firstDate ? `${summary.entryCount} 筆（${summary.firstDate} ～ ${summary.lastDate}）` : `${summary.entryCount} 筆`],
     ["預算與目標", `預算 ${summary.budgetCount} 筆、目標 ${summary.goalCount} 個（存入 ${summary.depositCount} 筆）`],
+    ["固定支出與規則", `固定支出 ${summary.recurringCount} 筆、自動分類規則 ${summary.categoryRuleCount} 條`],
   ];
   return (
     <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">

@@ -21,6 +21,7 @@ const stat = (overrides: Partial<CategoryStat> & Pick<CategoryStat, "account_id"
 
 const entry = (overrides: Partial<Entry> & Pick<Entry, "id" | "amount" | "category_id">): Entry => ({
   ledger_id: "L",
+  invoice_no: null,
   kind: "expense",
   entry_date: "2026-10-23",
   from_account_id: "cash",

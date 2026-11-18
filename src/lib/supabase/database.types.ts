@@ -135,6 +135,36 @@ export type Database = {
           },
         ]
       }
+      category_rules: {
+        Row: {
+          account_id: string | null
+          category_id: string
+          created_at: string
+          id: string
+          ledger_id: string
+          pattern: string
+          sort_order: number
+        }
+        Insert: {
+          account_id?: string | null
+          category_id: string
+          created_at?: string
+          id?: string
+          ledger_id: string
+          pattern: string
+          sort_order?: number
+        }
+        Update: {
+          account_id?: string | null
+          category_id?: string
+          created_at?: string
+          id?: string
+          ledger_id?: string
+          pattern?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
       entries: {
         Row: {
           amount: number
@@ -144,6 +174,7 @@ export type Database = {
           entry_date: string
           from_account_id: string | null
           id: string
+          invoice_no: string | null
           kind: Database["public"]["Enums"]["entry_kind"]
           ledger_id: string
           memo: string | null
@@ -158,6 +189,7 @@ export type Database = {
           entry_date: string
           from_account_id?: string | null
           id?: string
+          invoice_no?: string | null
           kind: Database["public"]["Enums"]["entry_kind"]
           ledger_id: string
           memo?: string | null
@@ -172,6 +204,7 @@ export type Database = {
           entry_date?: string
           from_account_id?: string | null
           id?: string
+          invoice_no?: string | null
           kind?: Database["public"]["Enums"]["entry_kind"]
           ledger_id?: string
           memo?: string | null
@@ -395,6 +428,75 @@ export type Database = {
           },
         ]
       }
+      inbox_items: {
+        Row: {
+          amount: number
+          category_id: string | null
+          created_at: string
+          due_date: string | null
+          entry_date: string
+          entry_ids: string[]
+          from_account_id: string | null
+          id: string
+          invoice_no: string | null
+          items: Json
+          kind: Database["public"]["Enums"]["entry_kind"]
+          ledger_id: string
+          memo: string | null
+          merchant_name: string | null
+          recurring_rule_id: string | null
+          resolved_at: string | null
+          seller_ban: string | null
+          source: string
+          status: string
+          to_account_id: string | null
+        }
+        Insert: {
+          amount: number
+          category_id?: string | null
+          created_at?: string
+          due_date?: string | null
+          entry_date: string
+          entry_ids?: string[]
+          from_account_id?: string | null
+          id?: string
+          invoice_no?: string | null
+          items?: Json
+          kind?: Database["public"]["Enums"]["entry_kind"]
+          ledger_id: string
+          memo?: string | null
+          merchant_name?: string | null
+          recurring_rule_id?: string | null
+          resolved_at?: string | null
+          seller_ban?: string | null
+          source: string
+          status?: string
+          to_account_id?: string | null
+        }
+        Update: {
+          amount?: number
+          category_id?: string | null
+          created_at?: string
+          due_date?: string | null
+          entry_date?: string
+          entry_ids?: string[]
+          from_account_id?: string | null
+          id?: string
+          invoice_no?: string | null
+          items?: Json
+          kind?: Database["public"]["Enums"]["entry_kind"]
+          ledger_id?: string
+          memo?: string | null
+          merchant_name?: string | null
+          recurring_rule_id?: string | null
+          resolved_at?: string | null
+          seller_ban?: string | null
+          source?: string
+          status?: string
+          to_account_id?: string | null
+        }
+        Relationships: []
+      }
       ledgers: {
         Row: {
           cover_color: string | null
@@ -431,6 +533,39 @@ export type Database = {
         }
         Relationships: []
       }
+      merchants: {
+        Row: {
+          id: string
+          last_account_id: string | null
+          last_category_id: string | null
+          ledger_id: string
+          merchant_key: string
+          name: string | null
+          seller_ban: string | null
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          last_account_id?: string | null
+          last_category_id?: string | null
+          ledger_id: string
+          merchant_key: string
+          name?: string | null
+          seller_ban?: string | null
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          last_account_id?: string | null
+          last_category_id?: string | null
+          ledger_id?: string
+          merchant_key?: string
+          name?: string | null
+          seller_ban?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           animations_enabled: boolean
@@ -458,6 +593,66 @@ export type Database = {
         }
         Relationships: []
       }
+      recurring_rules: {
+        Row: {
+          amount: number
+          amount_varies: boolean
+          category_id: string | null
+          created_at: string
+          day_of_month: number | null
+          frequency: string
+          from_account_id: string | null
+          id: string
+          is_active: boolean
+          kind: Database["public"]["Enums"]["entry_kind"]
+          ledger_id: string
+          memo: string | null
+          month_of_year: number | null
+          name: string
+          next_date: string
+          to_account_id: string | null
+          weekday: number | null
+        }
+        Insert: {
+          amount: number
+          amount_varies?: boolean
+          category_id?: string | null
+          created_at?: string
+          day_of_month?: number | null
+          frequency: string
+          from_account_id?: string | null
+          id?: string
+          is_active?: boolean
+          kind?: Database["public"]["Enums"]["entry_kind"]
+          ledger_id: string
+          memo?: string | null
+          month_of_year?: number | null
+          name: string
+          next_date: string
+          to_account_id?: string | null
+          weekday?: number | null
+        }
+        Update: {
+          amount?: number
+          amount_varies?: boolean
+          category_id?: string | null
+          created_at?: string
+          day_of_month?: number | null
+          frequency?: string
+          from_account_id?: string | null
+          id?: string
+          is_active?: boolean
+          kind?: Database["public"]["Enums"]["entry_kind"]
+          ledger_id?: string
+          memo?: string | null
+          month_of_year?: number | null
+          name?: string
+          next_date?: string
+          to_account_id?: string | null
+          weekday?: number | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       account_balances: {
@@ -480,6 +675,10 @@ export type Database = {
       }
     }
     Functions: {
+      account_in_ledger: {
+        Args: { p_account: string; p_ledger: string; p_types: Database["public"]["Enums"]["account_type"][] }
+        Returns: boolean
+      }
       assert_entry_balanced: {
         Args: { p_entry_id: string }
         Returns: undefined
@@ -508,6 +707,7 @@ export type Database = {
         Args: { p_accounts: Json; p_name: string; p_start_date: string }
         Returns: undefined
       }
+      confirm_inbox_item: { Args: { p_entry: Json; p_item: string }; Returns: string[] }
       create_ledger_with_defaults: {
         Args: { p_name?: string }
         Returns: string
@@ -521,6 +721,7 @@ export type Database = {
           income: number
         }[]
       }
+      generate_recurring_items: { Args: { p_ledger: string; p_until: string }; Returns: number }
       goal_progress: {
         Args: { p_as_of: string; p_ledger: string }
         Returns: {
@@ -530,6 +731,8 @@ export type Database = {
         }[]
       }
       is_ledger_owner: { Args: { p_ledger_id: string }; Returns: boolean }
+      merchant_key: { Args: { p_name: string; p_seller_ban: string }; Returns: string }
+      month_day: { Args: { p_day: number; p_month: number; p_year: number }; Returns: string }
       monthly_summary: {
         Args: { p_from: string; p_ledger: string; p_to: string }
         Returns: {
@@ -548,6 +751,10 @@ export type Database = {
           month: string
           net_worth: number
         }[]
+      }
+      recurrence_on_or_after: {
+        Args: { p_day: number; p_frequency: string; p_from: string; p_month: number; p_weekday: number }
+        Returns: string
       }
       report_balance_sheet: {
         Args: { p_as_of: string; p_ledger: string }
@@ -599,6 +806,10 @@ export type Database = {
       set_opening_balance: {
         Args: { p_account_id: string; p_amount: number }
         Returns: string
+      }
+      suggest_category: {
+        Args: { p_ledger: string; p_merchant: string; p_seller_ban: string }
+        Returns: { account_id: string; category_id: string; source: string }[]
       }
     }
     Enums: {
