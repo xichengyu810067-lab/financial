@@ -75,14 +75,22 @@ export function initialDraft(item: InboxItem): ConfirmDraft {
   };
 }
 
-/** 依發票品項拆開：每個品項一筆，類別先沿用建議的類別 */
+/**
+ * 依發票品項拆開：每個品項一筆，類別先沿用建議的類別。
+ * 負的品項（折抵、優惠）併進前一個品項；拆不出兩筆以上就維持一筆。
+ */
 export function splitsFromInvoice(item: InboxItem): Split[] {
-  const lines = invoiceLines(item);
-  if (lines.length < 2) return initialDraft(item).splits;
-  return lines.map((line) => ({
+  const merged: { name: string; qty: number; cents: number }[] = [];
+  for (const line of invoiceLines(item)) {
+    const value = toCents(line.qty * line.price);
+    if (value < 0 && merged.length > 0) merged[merged.length - 1].cents += value;
+    else merged.push({ name: line.name, qty: line.qty, cents: value });
+  }
+  if (merged.length < 2 || merged.some((m) => m.cents <= 0)) return initialDraft(item).splits;
+  return merged.map((m) => ({
     categoryId: item.category_id ?? "",
-    amount: amountText(line.qty * line.price),
-    memo: line.qty === 1 ? line.name : `${line.name} ×${line.qty}`,
+    amount: amountText(m.cents / 100),
+    memo: m.qty === 1 ? m.name : `${m.name} ×${m.qty}`,
   }));
 }
 

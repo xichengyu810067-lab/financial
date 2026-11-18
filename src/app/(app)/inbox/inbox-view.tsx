@@ -2,9 +2,10 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { CalendarClock, Inbox, ScanLine } from "lucide-react";
+import { CalendarClock, FileUp, Inbox, ScanLine } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "cn";
+import { ImportInvoicesDialog } from "@/components/inbox/import-invoices-dialog";
 import { InboxConfirmDialog } from "@/components/inbox/inbox-confirm-dialog";
 import { PageHeader } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
@@ -33,6 +34,7 @@ export function InboxView() {
   const [editing, setEditing] = useState<InboxItem | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [batching, setBatching] = useState(false);
+  const [importing, setImporting] = useState(false);
 
   const byId = useMemo(() => new Map((accounts ?? []).map((a) => [a.id, a])), [accounts]);
   const groups = useMemo(() => {
@@ -104,6 +106,10 @@ export function InboxView() {
               <ScanLine className="size-4" aria-hidden />
               掃發票
             </Link>
+            <Button size="sm" variant="outline" onClick={() => setImporting(true)}>
+              <FileUp className="size-4" aria-hidden />
+              匯入載具明細
+            </Button>
             <Link href="/recurring" className={buttonVariants({ variant: "outline", size: "sm" })}>
               <CalendarClock className="size-4" aria-hidden />
               固定支出
@@ -164,6 +170,7 @@ export function InboxView() {
       )}
 
       <InboxConfirmDialog item={editing} onClose={() => setEditing(null)} ledgerId={ledger.id} accounts={accounts} />
+      <ImportInvoicesDialog open={importing} onOpenChange={setImporting} ledgerId={ledger.id} />
     </>
   );
 }
