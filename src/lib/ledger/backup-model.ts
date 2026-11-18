@@ -97,6 +97,32 @@ const depositSchema = z.object({
   created_at: optionalTimestamp,
 });
 
+const recurringRuleSchema = z.object({
+  name: z.string().min(1),
+  kind: z.enum(["expense", "income", "transfer"]),
+  amount: money.positive(),
+  amount_varies: z.boolean().optional(),
+  from_account_id: nullableId,
+  to_account_id: nullableId,
+  category_id: nullableId,
+  memo: z.string().nullable(),
+  frequency: z.enum(["monthly", "weekly", "yearly"]),
+  day_of_month: z.number().int().nullable(),
+  weekday: z.number().int().nullable(),
+  month_of_year: z.number().int().nullable(),
+  next_date: date,
+  is_active: z.boolean().optional(),
+  created_at: optionalTimestamp,
+});
+
+const categoryRuleSchema = z.object({
+  pattern: z.string().min(1),
+  category_id: id,
+  account_id: nullableId,
+  sort_order: z.number().int().optional(),
+  created_at: optionalTimestamp,
+});
+
 export const backupSchema = z.object({
   app: z.literal(BACKUP_APP),
   version: z.literal(BACKUP_VERSION),
@@ -109,6 +135,9 @@ export const backupSchema = z.object({
   budgets: z.array(budgetSchema),
   goals: z.array(goalSchema),
   goal_deposits: z.array(depositSchema),
+  // 里程碑 7 起才有；舊備份沒有就當作空的
+  recurring_rules: z.array(recurringRuleSchema).default([]),
+  category_rules: z.array(categoryRuleSchema).default([]),
 });
 
 export type Backup = z.infer<typeof backupSchema>;
@@ -127,6 +156,8 @@ export interface BackupSummary {
   budgetCount: number;
   goalCount: number;
   depositCount: number;
+  recurringCount: number;
+  categoryRuleCount: number;
 }
 
 export type ParseResult = { ok: true; backup: Backup; summary: BackupSummary } | { ok: false; error: string };
@@ -151,6 +182,8 @@ export interface BackupParts {
   budgets: Row[];
   goals: Row[];
   goal_deposits: Row[];
+  recurring_rules?: Row[];
+  category_rules?: Row[];
 }
 
 /** 組成要下載的備份物件（欄位順序固定，方便人看） */
@@ -176,6 +209,8 @@ export function buildBackup(parts: BackupParts, exportedAt: Date = new Date()) {
     budgets: strip(parts.budgets, ["ledger_id", "id"]),
     goals: strip(parts.goals, ["ledger_id"]),
     goal_deposits: strip(parts.goal_deposits, ["ledger_id", "id"]),
+    recurring_rules: strip(parts.recurring_rules ?? [], ["ledger_id", "id"]),
+    category_rules: strip(parts.category_rules ?? [], ["ledger_id", "id"]),
   };
 }
 
@@ -242,6 +277,12 @@ export function parseBackup(text: string): ParseResult {
     return { ok: false, error: "備份檔裡有目標綁到不存在的帳戶" };
   }
   if (backup.goal_deposits.some((d) => !goalIds.has(d.goal_id))) return { ok: false, error: "備份檔裡有存入紀錄指到不存在的目標" };
+  if (backup.recurring_rules.some((r) => missing(r.from_account_id) || missing(r.to_account_id) || missing(r.category_id))) {
+    return { ok: false, error: "備份檔裡有固定支出指到不存在的帳戶或類別" };
+  }
+  if (backup.category_rules.some((r) => !accountIds.has(r.category_id) || missing(r.account_id))) {
+    return { ok: false, error: "備份檔裡有分類規則指到不存在的帳戶或類別" };
+  }
 
   // 每筆交易至少兩行分錄、每行只有借或貸、借貸相等
   const totals = new Map<string, { debit: number; credit: number; count: number }>();
@@ -279,5 +320,7 @@ export function summarize(backup: Backup): BackupSummary {
     budgetCount: backup.budgets.length,
     goalCount: backup.goals.length,
     depositCount: backup.goal_deposits.length,
+    recurringCount: backup.recurring_rules.length,
+    categoryRuleCount: backup.category_rules.length,
   };
 }

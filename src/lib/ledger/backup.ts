@@ -8,7 +8,7 @@ import { backupFileName, buildBackup, type Backup } from "./backup-model";
 /** PostgREST 一次最多回 1000 列，交易與分錄多的帳本要分頁抓 */
 const PAGE = 1000;
 
-type Table = "accounts" | "entries" | "entry_lines" | "budgets" | "goals" | "goal_deposits";
+type Table = "accounts" | "entries" | "entry_lines" | "budgets" | "goals" | "goal_deposits" | "recurring_rules" | "category_rules";
 
 async function fetchAll(table: Table, ledgerId: string): Promise<Record<string, unknown>[]> {
   const supabase = createClient();
@@ -31,10 +31,12 @@ export async function exportLedger(ledgerId: string) {
   if (ledgerError) throw new Error(ledgerError.message);
   const profile = auth.user ? (await supabase.from("profiles").select("*").eq("id", auth.user.id).maybeSingle()).data : null;
 
-  const [accounts, entries, entry_lines, budgets, goals, goal_deposits] = await Promise.all(
-    (["accounts", "entries", "entry_lines", "budgets", "goals", "goal_deposits"] as const).map((t) => fetchAll(t, ledgerId)),
+  const [accounts, entries, entry_lines, budgets, goals, goal_deposits, recurring_rules, category_rules] = await Promise.all(
+    (["accounts", "entries", "entry_lines", "budgets", "goals", "goal_deposits", "recurring_rules", "category_rules"] as const).map((t) =>
+      fetchAll(t, ledgerId),
+    ),
   );
-  return buildBackup({ ledger, profile, accounts, entries, entry_lines, budgets, goals, goal_deposits });
+  return buildBackup({ ledger, profile, accounts, entries, entry_lines, budgets, goals, goal_deposits, recurring_rules, category_rules });
 }
 
 /** 匯出並觸發下載；回傳交易筆數給提示用 */

@@ -2,6 +2,7 @@ import {
   ArrowLeftRight,
   CalendarDays,
   ChartColumn,
+  Inbox,
   NotebookPen,
   Settings,
   Tags,
@@ -20,6 +21,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/today", label: "今天", icon: NotebookPen },
   { href: "/month", label: "本月", icon: CalendarDays },
   { href: "/transactions", label: "交易", icon: ArrowLeftRight },
+  { href: "/inbox", label: "待確認", icon: Inbox },
   { href: "/accounts", label: "帳戶", icon: Wallet },
   { href: "/categories", label: "類別", icon: Tags },
   { href: "/reports", label: "報表", icon: ChartColumn },
@@ -28,10 +30,11 @@ export const NAV_ITEMS: NavItem[] = [
 
 export const MOBILE_PRIMARY_COUNT = 3;
 
-/** 日頁（/days/…）算在「今天」，月章節頁（/months/…）算在「本月」 */
+/** 日頁（/days/…）算在「今天」，月章節頁（/months/…）算在「本月」，固定支出（/recurring）算在「待確認」 */
 export function isActivePath(pathname: string, href: string): boolean {
   if (pathname === href || pathname.startsWith(`${href}/`)) return true;
   if (href === "/today") return pathname.startsWith("/days");
   if (href === "/month") return pathname.startsWith("/months");
+  if (href === "/inbox") return pathname.startsWith("/recurring");
   return false;
 }

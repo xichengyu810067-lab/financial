@@ -37,13 +37,13 @@ export async function testClient(): Promise<{ supabase: SupabaseClient<Database>
   return { supabase, ledgerId: ledger.id };
 }
 
-/** 刪掉以 [E2E] 開頭的交易、目標（連同存入）與這次跑之後新增的預算；回傳刪了幾筆 */
+/** 刪掉以 [E2E] 開頭的交易、目標（連同存入）、固定支出、分類規則、待確認項目與這次跑之後新增的預算；回傳刪了幾筆 */
 export async function cleanupE2EData(state?: RunState) {
   const { supabase, ledgerId } = await testClient();
   const like = `${E2E}%`;
   const counts: Record<string, number> = {};
 
-  const del = async (table: "entries" | "goals" | "goal_deposits", column: string) => {
+  const del = async (table: "entries" | "goals" | "goal_deposits" | "recurring_rules" | "category_rules" | "inbox_items", column: string) => {
     const { data, error } = await supabase.from(table).delete().eq("ledger_id", ledgerId).like(column, like).select("id");
     if (error) throw new Error(`清理 ${table} 失敗：${error.message}`);
     counts[table] = (counts[table] ?? 0) + (data?.length ?? 0);
@@ -51,6 +51,10 @@ export async function cleanupE2EData(state?: RunState) {
   await del("entries", "memo");
   await del("goal_deposits", "note");
   await del("goals", "name");
+  // 里程碑 7：固定支出（待確認項目跟著刪）、分類規則、殘留的待確認項目
+  await del("recurring_rules", "name");
+  await del("category_rules", "pattern");
+  await del("inbox_items", "memo");
 
   if (state) {
     const { data, error } = await supabase.from("budgets").delete().eq("ledger_id", ledgerId).gte("created_at", state.startedAt).select("id");

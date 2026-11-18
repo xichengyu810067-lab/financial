@@ -112,7 +112,7 @@ export function linesForEntry(input: Omit<SaveEntryInput, "id" | "ledgerId" | "d
   }
 }
 
-async function invalidateAfterWrite(queryClient: ReturnType<typeof useQueryClient>, ledgerId: string) {
+export async function invalidateAfterWrite(queryClient: ReturnType<typeof useQueryClient>, ledgerId: string) {
   await Promise.all([
     queryClient.invalidateQueries({ queryKey: entryKeys.all(ledgerId) }),
     queryClient.invalidateQueries({ queryKey: queryKeys.balances(ledgerId) }),

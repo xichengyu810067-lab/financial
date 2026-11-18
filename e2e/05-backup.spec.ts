@@ -11,7 +11,7 @@ test("設定頁下載備份：檔名與 JSON 內容", async ({ page }) => {
 
   const backup = JSON.parse(await readFile(await download.path(), "utf8"));
   expect(backup).toMatchObject({ app: "financial", version: 1 });
-  expect(Object.keys(backup)).toEqual(["app", "version", "exported_at", "ledger", "profile", "accounts", "entries", "entry_lines", "budgets", "goals", "goal_deposits"]);
+  expect(Object.keys(backup)).toEqual(["app", "version", "exported_at", "ledger", "profile", "accounts", "entries", "entry_lines", "budgets", "goals", "goal_deposits", "recurring_rules", "category_rules"]);
   expect(backup.entries.length).toBeGreaterThan(0);
   expect(JSON.stringify(backup)).not.toContain("ledger_id");
   expect(backup.accounts.some((a: { subtype: string }) => a.subtype === "opening_balance")).toBe(true);

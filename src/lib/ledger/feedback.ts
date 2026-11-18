@@ -100,6 +100,7 @@ function overspendAfter(ctx: SaveContext): SpendingAlert | undefined {
     from_account_id: null,
     to_account_id: null,
     memo: null,
+    invoice_no: null,
     created_by: "",
     created_at: "",
     updated_at: "",

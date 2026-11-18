@@ -3,7 +3,7 @@
 --
 -- 在單一 DO 區塊裡建立兩位測試使用者，u1 記幾筆帳、設子類別、預算、目標與存入，
 -- 用 SQL 組出跟前端匯出相同格式的備份，然後確認：
---   1. 改動後還原，回到備份時的狀態（科目、餘額、交易、預算、目標、存入、帳本設定），id 重新產生
+--   1. 改動後還原，回到備份時的狀態（科目、餘額、交易、預算、目標、存入、帳本設定、固定支出、分類規則），id 重新產生
 --   2. 同一份備份還原兩次也不會撞主鍵
 --   3. 不能還原到別人的帳本
 --   4. 壞檔（借貸不平衡、參照不完整、版本不對）會被擋下，而且帳本維持原樣
@@ -33,6 +33,14 @@ create function pg_temp.ledger_signature(p_ledger uuid) returns text language sq
       select format('D:%s/%s/%s', g.name, d.amount, d.note) from public.goal_deposits d join public.goals g on g.id = d.goal_id where d.ledger_id = p_ledger
       union all
       select format('L:%s/%s/%s/%s/%s', name, start_date, cover_color, cover_material, monthly_spending_limit) from public.ledgers where id = p_ledger
+      union all
+      select format('R:%s/%s/%s/%s/%s/%s', r.name, r.amount, coalesce(f.name, '-'), coalesce(c.name, '-'), r.frequency, r.next_date)
+        from public.recurring_rules r left join public.accounts f on f.id = r.from_account_id left join public.accounts c on c.id = r.category_id
+       where r.ledger_id = p_ledger
+      union all
+      select format('C:%s/%s/%s', cr.pattern, c.name, coalesce(a.name, '-'))
+        from public.category_rules cr join public.accounts c on c.id = cr.category_id left join public.accounts a on a.id = cr.account_id
+       where cr.ledger_id = p_ledger
   ) s;
 $f$;
 
@@ -84,6 +92,10 @@ begin
   insert into public.goals (ledger_id, name, target_amount, account_id, sort_order) values (l1, '旅行基金', 50000, bank1, 10) returning id into g1;
   insert into public.goals (ledger_id, name, target_amount, sort_order) values (l1, '新手機', 20000, 20) returning id into g2;
   insert into public.goal_deposits (ledger_id, goal_id, amount, note) values (l1, g2, 3000, '第一筆');
+  -- 里程碑 7：固定支出與自動分類規則也要備份還原；待確認項目不備份
+  insert into public.recurring_rules (ledger_id, name, amount, from_account_id, category_id, frequency, day_of_month, next_date)
+  values (l1, '房租', 12000, bank1, snack1, 'monthly', 5, current_date);
+  insert into public.category_rules (ledger_id, pattern, category_id, account_id) values (l1, '全家', food1, cash1);
   set constraints all immediate;
   set constraints all deferred;
 
@@ -97,7 +109,9 @@ begin
     'entry_lines', (select jsonb_agg(to_jsonb(x)) from public.entry_lines x where ledger_id = l1),
     'budgets', (select jsonb_agg(to_jsonb(b)) from public.budgets b where ledger_id = l1),
     'goals', (select jsonb_agg(to_jsonb(g)) from public.goals g where ledger_id = l1),
-    'goal_deposits', (select jsonb_agg(to_jsonb(d)) from public.goal_deposits d where ledger_id = l1));
+    'goal_deposits', (select jsonb_agg(to_jsonb(d)) from public.goal_deposits d where ledger_id = l1),
+    'recurring_rules', (select jsonb_agg(to_jsonb(r)) from public.recurring_rules r where ledger_id = l1),
+    'category_rules', (select jsonb_agg(to_jsonb(c)) from public.category_rules c where ledger_id = l1));
 
   before_sig := pg_temp.ledger_signature(l1);
 
@@ -112,6 +126,8 @@ begin
   update public.goals set name = '改掉的名字' where id = g2;
   update public.ledgers set name = '改掉的帳本', monthly_spending_limit = null where id = l1;
   insert into public.accounts (ledger_id, name, type) values (l1, '多出來的類別', 'expense');
+  delete from public.category_rules where ledger_id = l1;
+  update public.recurring_rules set amount = 1 where ledger_id = l1;
 
   result := public.restore_ledger(l1, backup);
   set constraints all immediate;
