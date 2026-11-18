@@ -95,6 +95,15 @@
 - CI 新增 `rls` job：`supabase db start` 起本機 Postgres 套 migrations，`psql` 跑 `rls.sql`，看到 `ALL_OK` 才通過。`supabase/config.toml` 補 `project_id = "financial"`（CLI 需要）。
 - `.github/workflows/keepalive.yml`：每天 UTC 03:17 與手動觸發，用 publishable key 查一次 `ledgers`；本機以同一個查詢測過回傳 200。需要 repository variables `SUPABASE_URL`、`SUPABASE_PUBLISHABLE_KEY`；排程只在合併到 main 後生效。2026-11-18 合併（#13）後手動觸發一次成功，CI 的 `rls` job 綠燈。
 
+### PR B Google 登入（2026-11-18 實作）
+
+- 登入頁與註冊頁最上面加「使用 Google 登入」按鈕和「或」分隔線（`src/components/auth/google-sign-in.tsx`）。按鈕送出 server action `signInWithGoogle`：先查 Supabase 的 `/auth/v1/settings` 確認 Google 已啟用（沒開就顯示「Google 登入尚未啟用，請先用 Email 登入」，不會跳到 Supabase 的錯誤 JSON 頁），再用 `signInWithOAuth` 取得授權網址導過去；`prompt=select_account` 讓有多個 Google 帳號的人每次都能選。
+- 回跳網址是 `/auth/callback?next=…&via=google`。`via=google` 讓 callback 出錯時導回 `/login?error=google_cancelled`（使用者在 Google 按取消）或 `google`（其他失敗），跟 Email 連結過期的訊息分開。
+- **順手修掉一個舊問題**：`/auth/callback` 原本只要有 `x-forwarded-host` 就一律組 `https://` 網址，本機 `next dev`（http）會被導到打不開的 `https://localhost:3000`；改成看 `x-forwarded-proto`。正式站在 Vercel 上仍然是 https。
+- Migration `20261118022526_milestone_6_google_display_name.sql`：`handle_new_user` 顯示名稱依序取 `display_name → full_name → name → 信箱前段`，最多 40 字（同設定頁限制）。已在正式資料庫用回滾交易模擬三個 Google 新使用者驗證：名稱取對、空白的 display_name 會往下找、過長截到 40 字、帳本照常建立。
+- 同信箱合併靠 Supabase 的自動連結（不用寫程式）：信箱已確認的 Email 帳號用 Google 登入，會連到同一個使用者、看到同一本帳本。注意：若 Email 帳號**還沒確認**，Supabase 為防止搶註會移除那個未確認的密碼登入方式（寫在 `docs/setup-google.md`）。
+- Google 後台與 Supabase 的設定步驟寫在 `docs/setup-google.md`；Google 尚未啟用，真正用 Google 帳號登入的驗收等使用者設定完再做。
+
 ## 不在此里程碑
 
 多帳本切換、Email 提醒、匯入其他記帳 App 的資料、行動 App。
