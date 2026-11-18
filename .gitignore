@@ -42,3 +42,8 @@ next-env.d.ts
 
 # 允許範例環境檔進版控
 !.env.example
+
+# Playwright E2E
+/e2e/.auth/
+/playwright-report/
+/test-results/

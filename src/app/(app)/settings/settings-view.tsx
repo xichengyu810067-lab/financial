@@ -62,22 +62,21 @@ function SettingsForm({ ledger, profile }: { ledger: Ledger; profile: Profile & 
     const limitRaw = spendingLimit.trim();
     const limit = limitRaw === "" ? null : Number(limitRaw);
     if (limit !== null && (!Number.isFinite(limit) || limit < 0)) return toast.error("每月總支出上限請輸入 0 以上的金額");
-    updateLedger.mutate(
-      { id: ledger.id, name: ledgerName.trim(), start_date: startDate, monthly_spending_limit: limit },
-      { onSuccess: () => toast.success("已儲存帳本設定"), onError: (err) => toast.error(translateDbError(err)) },
-    );
+    // 用 mutateAsync：存完會重抓帳本，表單以新的 key 重新掛載，mutate 的 onSuccess 會因元件卸載而不觸發
+    updateLedger
+      .mutateAsync({ id: ledger.id, name: ledgerName.trim(), start_date: startDate, monthly_spending_limit: limit })
+      .then(() => toast.success("已儲存帳本設定"), (err) => toast.error(translateDbError(err)));
   };
 
   const saveProfile = (e: React.FormEvent) => {
     e.preventDefault();
-    updateProfile.mutate(
-      {
+    updateProfile
+      .mutateAsync({
         id: profile.id,
         display_name: displayName.trim() || (profile.email?.split("@")[0] ?? ""),
         slogan: slogan.trim() || null,
-      },
-      { onSuccess: () => toast.success("已儲存個人資料"), onError: (err) => toast.error(translateDbError(err)) },
-    );
+      })
+      .then(() => toast.success("已儲存個人資料"), (err) => toast.error(translateDbError(err)));
   };
 
   return (

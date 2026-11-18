@@ -115,6 +115,15 @@
 - `supabase/tests/restore.sql`（12 項，也放進 CI 的 `rls` job）：改動後還原回到備份狀態（以名稱比對科目、餘額、交易、預算、目標、存入、帳本設定）、id 重新產生、同一份還原兩次、不能還原到別人的帳本、借貸不平衡／參照不完整／版本不對都被擋下且帳本不變、另一位使用者還原同一份備份互不影響、anon 不能呼叫。已在正式資料庫以回滾方式跑過，`ALL_OK`。
 - 本機畫面驗證：下載的檔案內容與資料庫筆數一致、沒有 `ledger_id`、每筆借貸平衡；上傳壞檔顯示「備份檔裡有借貸不平衡的交易（日期「備註」）」；上傳正常檔顯示摘要與確認對話框（按取消，沒有實際覆蓋正式帳本）。
 
+### PR D E2E 與 README（2026-11-18 實作）
+
+- `@playwright/test` 1.65 與 Chromium headless shell；`npm run e2e`。`playwright.config.ts` 用 `@next/env` 讀 `.env.local`、自動起 `next dev`、`workers: 1`（共用同一個測試帳號）、`zh-TW`／`Asia/Taipei`。
+- 專案結構：`setup` 專案（`e2e/global.setup.ts`）→ 各情境（`e2e/0*.spec.ts`）→ `teardown` 專案（`e2e/global.teardown.ts`）。setup 先檢查 `DEV_TEST_EMAIL` 網域必須是 `.test`（不是就拒絕執行）、清掉上次殘留、記下每月總支出上限與開始時間、透過畫面登入一次存 `storageState`；teardown 刪掉 `[E2E]` 開頭的交易／目標／存入與這次之後新增的預算、還原總支出上限，並確認帳本沒有 `[E2E]` 資料。
+- 六個情境：記一筆（算式金額）→ 今天這一頁 → 交易清單 → 編輯 → 刪除；本月還能花跟著總支出上限變、類別當月額度；報表六種期間（URL `preset`）與三張圖（確認 Recharts 畫出 svg）；手動目標存入到達標（toast 與進度 100%）再封存；下載備份（檔名、欄位順序、沒有 `ledger_id`、每筆借貸平衡）；登入 → 使用者選單 → 登出（放最後，登出會讓 refresh token 失效）。
+- **E2E 抓到一個真的 bug**：設定頁存帳本設定或個人資料後，「已儲存」的提示從來不會出現。原因是存完重抓資料，表單以資料當 `key` 重新掛載，TanStack Query 的 `mutate(..., { onSuccess })` 在元件卸載後不會呼叫。改用 `mutateAsync().then(...)`。
+- 2026-11-18 本機跑兩次：第一次抓到上述 bug 與一個選擇器過寬；修正後 8 項（含 setup／teardown）全過，約 36 秒；之後查資料庫確認測試帳號回到原樣（15 筆交易、0 目標、0 預算、總支出上限 25000）。
+- README 改寫成完整版：功能總覽（每個畫面的位置）、技術架構、本機開發與環境變數、Supabase 設定（migration、URL、Brevo、Google、測試帳號）、測試（Vitest、SQL、E2E 注意事項）、備份與還原、部署、已知限制。
+
 ## 不在此里程碑
 
 多帳本切換、Email 提醒、匯入其他記帳 App 的資料、行動 App。
