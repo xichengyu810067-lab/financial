@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { Barcode, BookOpen, LogOut, ScanLine, Settings } from "lucide-react";
 import { CarrierBarcodeDialog } from "@/components/inbox/carrier-barcode";
 import { Button } from "@/components/ui/button";
@@ -15,13 +15,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
-import { signOut } from "@/lib/auth/actions";
+import { useSignOut } from "@/lib/auth/use-sign-out";
 import { useProfile } from "@/lib/ledger/queries";
 
 export function UserMenu() {
   const router = useRouter();
   const { data: profile, isPending } = useProfile();
-  const [signingOut, startSignOut] = useTransition();
+  const { signingOut, signOut } = useSignOut();
   const [showBarcode, setShowBarcode] = useState(false);
 
   if (isPending) return <Skeleton className="h-8 w-24 rounded-full" />;
@@ -59,7 +59,7 @@ export function UserMenu() {
             <Settings className="size-4" aria-hidden />
             設定
           </DropdownMenuItem>
-          <DropdownMenuItem variant="destructive" disabled={signingOut} onClick={() => startSignOut(() => signOut())}>
+          <DropdownMenuItem variant="destructive" disabled={signingOut} onClick={signOut}>
             <LogOut className="size-4" aria-hidden />
             {signingOut ? "登出中…" : "登出"}
           </DropdownMenuItem>

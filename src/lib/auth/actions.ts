@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { getSupabaseEnv } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
 import { translateAuthError } from "./errors";
+import { sanitizeNext } from "./safe-next";
 import {
   fieldErrorsOf,
   forgotPasswordSchema,
@@ -32,11 +33,6 @@ async function getOrigin(): Promise<string> {
   return `${proto}://${host}`;
 }
 
-/** 只允許站內相對路徑，避免開放式重導向 */
-export async function safeNext(value: unknown, fallback = "/cover"): Promise<string> {
-  if (typeof value === "string" && value.startsWith("/") && !value.startsWith("//")) return value;
-  return fallback;
-}
 
 function str(formData: FormData, key: string): string {
   const v = formData.get(key);
@@ -66,10 +62,8 @@ export async function signUp(_prev: AuthState, formData: FormData): Promise<Auth
   });
   if (error) return { error: translateAuthError(error), values };
 
-  // 信箱驗證開啟時，重複註冊會回傳沒有 identities 的假使用者
-  if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
-    return { error: "此信箱已註冊，請直接登入", values };
-  }
+  // 信箱驗證開啟時，重複註冊會回傳沒有 identities 的假使用者。刻意跟新註冊顯示同一個畫面，
+  // 不告訴對方「這個信箱已註冊」，避免被拿來試出誰有帳號（確認信畫面會提醒已有帳號的人直接登入）。
 
   // 若專案關閉了信箱驗證，註冊後會直接有 session
   if (data.session) redirect("/onboarding");
@@ -101,14 +95,18 @@ export async function signIn(_prev: AuthState, formData: FormData): Promise<Auth
   const { error } = await supabase.auth.signInWithPassword(parsed.data);
   if (error) return { error: translateAuthError(error), values };
 
-  redirect(await safeNext(formData.get("next")));
+  redirect(sanitizeNext(formData.get("next")));
 }
 
 /** Supabase 後台有沒有開 Google；查不到（網路問題）時當作有開，交給 Supabase 處理 */
 async function isGoogleEnabled(): Promise<boolean> {
   const { url, key } = getSupabaseEnv();
   try {
-    const res = await fetch(`${url}/auth/v1/settings`, { headers: { apikey: key }, cache: "no-store" });
+    const res = await fetch(`${url}/auth/v1/settings`, {
+      headers: { apikey: key },
+      cache: "no-store",
+      signal: AbortSignal.timeout(5000),
+    });
     if (!res.ok) return true;
     const settings = (await res.json()) as { external?: Record<string, boolean> };
     return settings.external?.google !== false;
@@ -125,7 +123,7 @@ async function isGoogleEnabled(): Promise<boolean> {
 export async function signInWithGoogle(_prev: AuthState, formData: FormData): Promise<AuthState> {
   if (!(await isGoogleEnabled())) return { error: "Google 登入尚未啟用，請先用 Email 登入" };
 
-  const next = await safeNext(formData.get("next"));
+  const next = sanitizeNext(formData.get("next"));
   const supabase = await createClient();
   const origin = await getOrigin();
   const { data, error } = await supabase.auth.signInWithOAuth({
@@ -140,10 +138,13 @@ export async function signInWithGoogle(_prev: AuthState, formData: FormData): Pr
   redirect(data.url);
 }
 
+/**
+ * 登出只清掉 session，不在伺服器端導頁：由前端 `useSignOut` 接著清掉查詢快取並整頁導到登入頁，
+ * 同一台瀏覽器換人登入時才不會短暫看到上一位的資料。
+ */
 export async function signOut(): Promise<void> {
   const supabase = await createClient();
   await supabase.auth.signOut();
-  redirect("/login");
 }
 
 export async function requestPasswordReset(_prev: AuthState, formData: FormData): Promise<AuthState> {

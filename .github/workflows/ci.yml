@@ -5,6 +5,10 @@ on:
     branches: [main]
   pull_request:
 
+# 只需要讀程式碼；不給寫入權限，就算某個 action 被入侵也改不了 repo
+permissions:
+  contents: read
+
 jobs:
   check:
     runs-on: ubuntu-latest
@@ -13,8 +17,8 @@ jobs:
       NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
       NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci_placeholder
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 24
           cache: npm
@@ -28,10 +32,10 @@ jobs:
     # 跑 supabase/tests/*.sql。測試以 ALL_OK 例外結束並回滾，看到 ALL_OK 才算通過。不連正式資料庫。
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: supabase/setup-cli@v1
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: supabase/setup-cli@1dedf2c611547ede7232d26866dd3c56ab903bbb # v1
         with:
-          version: latest
+          version: 3.2.0 # 固定版本，升級時一起改，避免上游新版默默改變 CI 行為
       - name: 啟動本機 Postgres 並套用 migrations
         run: supabase db start
       - name: RLS 與函式權限測試

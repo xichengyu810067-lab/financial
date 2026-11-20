@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { sanitizeNext } from "@/lib/auth/safe-next";
 import { createClient } from "@/lib/supabase/server";
 
 /**
@@ -9,8 +10,7 @@ import { createClient } from "@/lib/supabase/server";
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get("code");
-  const nextParam = searchParams.get("next");
-  const next = nextParam && nextParam.startsWith("/") && !nextParam.startsWith("//") ? nextParam : "/cover";
+  const next = sanitizeNext(searchParams.get("next"));
 
   // Vercel 代理後 request.url 可能是內部位址，以 x-forwarded-host／proto 為準（本機 next dev 是 http）
   const requestUrl = new URL(request.url);
