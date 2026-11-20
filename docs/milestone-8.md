@@ -94,3 +94,7 @@ Migration `20261120090000_milestone_8_db_limits.sql`。套用前在正式資料�
   - 三個 SQL 測試都 `ALL_OK`（rls 150、restore 12、inbox 28）。
   - 拿掉這個 migration 後，新測試會失敗，目錄檢查列出的正好是正式資料庫查到的那 5 個 anon 可呼叫函式。
   - CI 的 `rls` job 用真的 Supabase 映像再跑一次。
+- **套用到正式資料庫**（2026-11-20，PR #21 的 CI 綠燈後；正式版本號 `20261120141412`）：
+  - 套用前再查一次正式資料，沒有任何一列違反新的長度、格式或系統科目限制。
+  - 三個 SQL 測試在正式資料庫以回滾方式跑過，都 `ALL_OK`（rls 150、restore 12、inbox 28），沒有留下測試使用者。
+  - Security advisors 只剩原本就有的「Leaked password protection 未開啟」，這屬於 Auth 後台設定，跟上面待確認的後台設定一起處理。
