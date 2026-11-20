@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { Check, LogOut } from "lucide-react";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { signOut } from "@/lib/auth/actions";
+import { useSignOut } from "@/lib/auth/use-sign-out";
 import { ACCENTS, COVER_COLORS, COVER_MATERIALS, coverColorOf, coverMaterialOf } from "@/lib/brand";
 import { translateDbError } from "@/lib/ledger/errors";
 import { useLedger, useProfile, useUpdateLedger, useUpdateProfile } from "@/lib/ledger/queries";
@@ -49,7 +49,7 @@ export function SettingsView() {
 function SettingsForm({ ledger, profile }: { ledger: Ledger; profile: Profile & { email: string | null } }) {
   const updateLedger = useUpdateLedger();
   const updateProfile = useUpdateProfile();
-  const [signingOut, startSignOut] = useTransition();
+  const { signingOut, signOut } = useSignOut();
 
   const [ledgerName, setLedgerName] = useState(ledger.name);
   const [startDate, setStartDate] = useState(ledger.start_date);
@@ -151,7 +151,7 @@ function SettingsForm({ ledger, profile }: { ledger: Ledger; profile: Profile & 
             <CardDescription>登出後需要重新輸入密碼才能進入。</CardDescription>
           </CardHeader>
           <CardFooter>
-            <Button variant="outline" disabled={signingOut} onClick={() => startSignOut(() => signOut())}>
+            <Button variant="outline" disabled={signingOut} onClick={signOut}>
               <LogOut className="size-4" aria-hidden />
               {signingOut ? "登出中…" : "登出"}
             </Button>

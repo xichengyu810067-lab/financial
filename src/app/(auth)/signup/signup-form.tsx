@@ -77,7 +77,7 @@ function CheckEmail({ email }: { email: string }) {
         <CardTitle>確認信已寄出</CardTitle>
         <CardDescription>
           我們寄了一封確認信到 <span className="font-medium text-foreground">{email}</span>
-          ，請點擊信中的連結完成註冊。沒收到的話請檢查垃圾郵件匣。
+          ，請點擊信中的連結完成註冊。沒收到的話請檢查垃圾郵件匣；如果這個信箱之前已經註冊過，請直接登入或使用「忘記密碼」。
         </CardDescription>
       </CardHeader>
       <CardContent className="grid gap-3">
