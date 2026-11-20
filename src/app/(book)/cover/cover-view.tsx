@@ -8,6 +8,7 @@ import { NotebookCover } from "@/components/journal/notebook-cover";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { coverColorOf } from "@/lib/brand";
+import { throwIfFailed } from "@/lib/ledger/db";
 import { todayISO } from "@/lib/ledger/format";
 import { coverGoalLine, pickFeaturedGoal } from "@/lib/ledger/goal-model";
 import { useGoalStatuses } from "@/lib/ledger/goals";
@@ -22,8 +23,10 @@ const OPEN_DURATION_MS = 950;
  */
 export function CoverView() {
   const router = useRouter();
-  const { data: ledger } = useLedger();
-  const { data: profile } = useProfile();
+  const ledgerQuery = useLedger();
+  const { data: ledger } = ledgerQuery;
+  const profileQuery = useProfile();
+  const { data: profile } = profileQuery;
   const today = todayISO();
   const { statuses: goalStatuses } = useGoalStatuses(ledger?.id, today);
   const reducedMotion = usePrefersReducedMotion();
@@ -39,6 +42,7 @@ export function CoverView() {
     return () => window.clearTimeout(timer);
   }, [opening, router]);
 
+  throwIfFailed(ledgerQuery, profileQuery);
   if (!ledger || !profile) {
     return <Skeleton className="mx-auto mt-10 h-[544px] w-[420px] max-w-full rounded-[18px]" />;
   }

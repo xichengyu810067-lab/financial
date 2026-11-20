@@ -6,6 +6,7 @@ import { DepositDialog } from "@/components/goals/deposit-dialog";
 import { GoalDialog } from "@/components/goals/goal-dialog";
 import { GoalProgress } from "@/components/goals/goal-progress";
 import { GoalsSheet } from "@/components/goals/goals-sheet";
+import { LoadError } from "@/components/load-error";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -26,20 +27,15 @@ type DialogState = { kind: "goal"; status?: GoalStatus } | { kind: "deposit"; st
  * 「全部目標」開右側面板管理；新增／編輯／存入的對話框都由這裡開。
  */
 export function GoalCard({ ledgerId, accounts, today }: GoalCardProps) {
-  const { statuses, error } = useGoalStatuses(ledgerId, today);
+  const goalsQuery = useGoalStatuses(ledgerId, today);
+  const { statuses, error } = goalsQuery;
   const [sheetOpen, setSheetOpen] = useState(false);
   const [dialog, setDialog] = useState<DialogState>(null);
   // 關閉時保留最後一個目標，讓對話框淡出時內容不會突然清空
   const [lastDeposit, setLastDeposit] = useState<GoalStatus | null>(null);
 
   if (error) {
-    return (
-      <Card size="sm">
-        <CardContent className="text-sm text-expense" role="alert">
-          目標載入失敗：{error.message}
-        </CardContent>
-      </Card>
-    );
+    return <LoadError title="目標載入失敗" error={error} retrying={goalsQuery.isFetching} onRetry={() => void goalsQuery.refetch()} />;
   }
   if (!statuses) return <Skeleton className="h-36 w-full rounded-[18px]" />;
 

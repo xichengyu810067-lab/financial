@@ -1,45 +1,17 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import type { Json } from "@/lib/supabase/database.types";
+import { unwrap, unwrapOne, unwrapRows } from "./db";
+import { invalidateAfter } from "./invalidate";
+import { keys } from "./keys";
 import type { Account, AccountBalance, Ledger, Profile } from "./types";
 
 /**
- * 瀏覽器端資料存取：所有查詢都走 TanStack Query，寫入後 invalidate 對應的查詢鍵，
- * 畫面（之後包含報表與圖表）就會即時更新。RLS 由 Supabase 保證只看得到自己的資料。
+ * 瀏覽器端資料存取：所有查詢都走 TanStack Query，鍵在 ./keys，寫入後要刷新什麼由 ./invalidate 決定。
+ * RLS 由 Supabase 保證只看得到自己的資料。
  */
-
-export const queryKeys = {
-  profile: ["profile"] as const,
-  ledger: ["ledger"] as const,
-  accounts: (ledgerId: string) => ["accounts", ledgerId] as const,
-  balances: (ledgerId: string) => ["balances", ledgerId] as const,
-  openings: (ledgerId: string) => ["openings", ledgerId] as const,
-  reports: (ledgerId: string) => ["reports", ledgerId] as const,
-};
-
-/** 有錯就丟出，否則回傳 data（可能為 null，例如 maybeSingle） */
-function unwrap<T>(result: { data: T; error: { message: string } | null }): T {
-  if (result.error) throw new Error(result.error.message);
-  return result.data;
-}
-
-/** 列表查詢：有錯就丟出，null 視為空陣列 */
-function unwrapRows<T>(result: { data: T[] | null; error: { message: string } | null }): T[] {
-  if (result.error) throw new Error(result.error.message);
-  return result.data ?? [];
-}
-
-/** 寫入科目或期初餘額後，讓相關查詢重新抓取 */
-export async function invalidateLedgerData(queryClient: QueryClient, ledgerId: string) {
-  await Promise.all([
-    queryClient.invalidateQueries({ queryKey: queryKeys.accounts(ledgerId) }),
-    queryClient.invalidateQueries({ queryKey: queryKeys.balances(ledgerId) }),
-    queryClient.invalidateQueries({ queryKey: queryKeys.openings(ledgerId) }),
-    queryClient.invalidateQueries({ queryKey: queryKeys.reports(ledgerId) }),
-  ]);
-}
 
 // ---------------------------------------------------------------------------
 // 查詢
@@ -47,7 +19,7 @@ export async function invalidateLedgerData(queryClient: QueryClient, ledgerId: s
 
 export function useProfile() {
   return useQuery({
-    queryKey: queryKeys.profile,
+    queryKey: keys.profile,
     queryFn: async (): Promise<(Profile & { email: string | null }) | null> => {
       const supabase = createClient();
       const {
@@ -63,7 +35,7 @@ export function useProfile() {
 /** MVP：每位使用者一個帳本，取最早建立的那一個 */
 export function useLedger() {
   return useQuery({
-    queryKey: queryKeys.ledger,
+    queryKey: keys.ledger,
     queryFn: async (): Promise<Ledger | null> => {
       const supabase = createClient();
       return unwrap(
@@ -75,7 +47,7 @@ export function useLedger() {
 
 export function useAccounts(ledgerId: string | undefined) {
   return useQuery({
-    queryKey: queryKeys.accounts(ledgerId ?? ""),
+    queryKey: keys.accounts(ledgerId ?? ""),
     enabled: Boolean(ledgerId),
     queryFn: async (): Promise<Account[]> => {
       const supabase = createClient();
@@ -94,7 +66,7 @@ export function useAccounts(ledgerId: string | undefined) {
 
 export function useBalances(ledgerId: string | undefined) {
   return useQuery({
-    queryKey: queryKeys.balances(ledgerId ?? ""),
+    queryKey: keys.balances(ledgerId ?? ""),
     enabled: Boolean(ledgerId),
     queryFn: async (): Promise<Map<string, AccountBalance>> => {
       const supabase = createClient();
@@ -107,7 +79,7 @@ export function useBalances(ledgerId: string | undefined) {
 /** 每個帳戶的期初餘額金額（account_id → amount） */
 export function useOpeningBalances(ledgerId: string | undefined) {
   return useQuery({
-    queryKey: queryKeys.openings(ledgerId ?? ""),
+    queryKey: keys.openings(ledgerId ?? ""),
     enabled: Boolean(ledgerId),
     queryFn: async (): Promise<Map<string, number>> => {
       const supabase = createClient();
@@ -160,14 +132,14 @@ export function useSaveAccount() {
       if (id) {
         unwrap(await supabase.from("accounts").update(payload).eq("id", id));
       } else {
-        const row = unwrap(
+        const row = unwrapOne(
           await supabase
             .from("accounts")
             .insert({ ...payload, ledger_id: input.ledgerId })
             .select("id")
             .single(),
+          "建立失敗",
         );
-        if (!row) throw new Error("建立失敗");
         id = row.id;
       }
       if (input.openingAmount !== undefined) {
@@ -175,7 +147,7 @@ export function useSaveAccount() {
       }
       return id;
     },
-    onSuccess: (_id, input) => invalidateLedgerData(queryClient, input.ledgerId),
+    onSuccess: (_id, input) => invalidateAfter(queryClient, "account", input.ledgerId),
   });
 }
 
@@ -186,7 +158,7 @@ export function useSetArchived() {
       const supabase = createClient();
       unwrap(await supabase.from("accounts").update({ is_archived: input.archived }).in("id", input.ids));
     },
-    onSuccess: (_r, input) => invalidateLedgerData(queryClient, input.ledgerId),
+    onSuccess: (_r, input) => invalidateAfter(queryClient, "account", input.ledgerId),
   });
 }
 
@@ -197,7 +169,7 @@ export function useDeleteAccount() {
       const supabase = createClient();
       unwrap(await supabase.from("accounts").delete().eq("id", input.id));
     },
-    onSuccess: (_r, input) => invalidateLedgerData(queryClient, input.ledgerId),
+    onSuccess: (_r, input) => invalidateAfter(queryClient, "account", input.ledgerId),
   });
 }
 
@@ -208,7 +180,7 @@ export function useMoveAccount() {
       const supabase = createClient();
       unwrap(await supabase.rpc("move_account", { p_account_id: input.id, p_direction: input.direction }));
     },
-    onSuccess: (_r, input) => invalidateLedgerData(queryClient, input.ledgerId),
+    onSuccess: (_r, input) => invalidateAfter(queryClient, "account", input.ledgerId),
   });
 }
 
@@ -227,10 +199,7 @@ export function useUpdateLedger() {
       const { id, ...patch } = input;
       unwrap(await supabase.from("ledgers").update(patch).eq("id", id));
     },
-    onSuccess: async (_r, input) => {
-      await queryClient.invalidateQueries({ queryKey: queryKeys.ledger });
-      await invalidateLedgerData(queryClient, input.id);
-    },
+    onSuccess: (_r, input) => invalidateAfter(queryClient, "ledger", input.id),
   });
 }
 
@@ -242,7 +211,7 @@ export function useUpdateProfile() {
       const { id, ...patch } = input;
       unwrap(await supabase.from("profiles").update(patch).eq("id", id));
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.profile }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: keys.profile }),
   });
 }
 
@@ -266,6 +235,7 @@ export function useCompleteOnboarding() {
         }),
       );
     },
+    // 引導會改帳本、科目、期初餘額，全部重抓
     onSuccess: () => queryClient.invalidateQueries(),
   });
 }

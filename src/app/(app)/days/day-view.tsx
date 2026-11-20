@@ -12,6 +12,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { evaluateSpendingAlerts, monthContext } from "@/lib/ledger/alerts";
+import { throwIfFailed } from "@/lib/ledger/db";
 import { compareChip, netWorthChange, type CompareChip } from "@/lib/ledger/day-model";
 import { useCategoryStats, useDailySummary, type DailySummaryRow } from "@/lib/ledger/days";
 import { dayLabel, monthRange } from "@/lib/ledger/entries";
@@ -47,10 +48,13 @@ export function DayView({ date: dateParam }: DayViewProps) {
   const month = date.slice(0, 7);
   const { start: monthStart, end: monthEnd } = monthRange(month);
 
-  const { data: ledger } = useLedger();
+  const ledgerQuery = useLedger();
+  const { data: ledger } = ledgerQuery;
   const ledgerId = ledger?.id;
-  const { data: profile } = useProfile();
-  const { data: accounts } = useAccounts(ledgerId);
+  const profileQuery = useProfile();
+  const { data: profile } = profileQuery;
+  const accountsQuery = useAccounts(ledgerId);
+  const { data: accounts } = accountsQuery;
   const { openNew, openEdit } = useEntrySheet();
 
   const entriesQuery = useEntriesInRange(ledgerId, date, date);
@@ -73,6 +77,7 @@ export function DayView({ date: dateParam }: DayViewProps) {
     );
   }
 
+  throwIfFailed(ledgerQuery, profileQuery, accountsQuery, entriesQuery, weekQuery, monthQuery, statsQuery, netNow, netYesterday, netLastWeek);
   if (
     !ledger ||
     !profile ||

@@ -3,7 +3,8 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import type { Json, TablesInsert } from "@/lib/supabase/database.types";
-import { inboxKeys } from "./inbox";
+import { unwrapRows } from "./db";
+import { invalidateAfter } from "./invalidate";
 import type { CsvInvoice } from "./invoice-csv";
 
 const CHUNK = 100;
@@ -19,9 +20,8 @@ export async function existingInvoiceNos(ledgerId: string, invoiceNos: string[])
   const supabase = createClient();
   const found = new Set<string>();
   for (const part of chunks(invoiceNos)) {
-    const { data, error } = await supabase.from("inbox_items").select("invoice_no").eq("ledger_id", ledgerId).in("invoice_no", part);
-    if (error) throw new Error(error.message);
-    for (const row of data ?? []) if (row.invoice_no) found.add(row.invoice_no);
+    const rows = unwrapRows(await supabase.from("inbox_items").select("invoice_no").eq("ledger_id", ledgerId).in("invoice_no", part));
+    for (const row of rows) if (row.invoice_no) found.add(row.invoice_no);
   }
   return found;
 }
@@ -67,15 +67,13 @@ export function useImportInvoices() {
             from_account_id: suggestion?.account_id ?? null,
           };
         });
-        const { data, error } = await supabase
-          .from("inbox_items")
-          .upsert(rows, { onConflict: "ledger_id,invoice_no", ignoreDuplicates: true })
-          .select("id");
-        if (error) throw new Error(error.message);
-        added += data?.length ?? 0;
+        const inserted = unwrapRows(
+          await supabase.from("inbox_items").upsert(rows, { onConflict: "ledger_id,invoice_no", ignoreDuplicates: true }).select("id"),
+        );
+        added += inserted.length;
       }
       return { added, duplicates: invoices.length - added };
     },
-    onSuccess: (_r, { ledgerId }) => queryClient.invalidateQueries({ queryKey: inboxKeys.pending(ledgerId) }),
+    onSuccess: (_r, { ledgerId }) => invalidateAfter(queryClient, "inboxItem", ledgerId),
   });
 }

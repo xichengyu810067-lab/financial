@@ -64,8 +64,7 @@ export function IncomeStatement({ ledgerId, accounts, period, onDrill, onChangeP
   const monthlyQuery = useMonthlySummary(ledgerId, period.from, period.to, chartMode === "monthly");
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(() => new Set());
 
-  const error = currentQuery.error ?? previousQuery.error;
-  if (error) return <ReportError message={error.message} />;
+  if (currentQuery.error || previousQuery.error) return <ReportError queries={[currentQuery, previousQuery]} />;
   if (!currentQuery.data || !previousQuery.data) return <ReportSkeleton />;
 
   const statement = buildIncomeStatement(currentQuery.data, previousQuery.data, accounts);

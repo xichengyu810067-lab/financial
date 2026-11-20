@@ -5,6 +5,7 @@ import { useState } from "react";
 import { PageHeader } from "@/components/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { throwIfFailed } from "@/lib/ledger/db";
 import { todayISO } from "@/lib/ledger/format";
 import { periodFromParams, periodToParams, type Period } from "@/lib/ledger/period";
 import { useAccounts, useLedger } from "@/lib/ledger/queries";
@@ -43,9 +44,11 @@ export function ReportsView() {
     today,
   );
 
-  const { data: ledger } = useLedger();
+  const ledgerQuery = useLedger();
+  const { data: ledger } = ledgerQuery;
   const ledgerId = ledger?.id;
-  const { data: accounts } = useAccounts(ledgerId);
+  const accountsQuery = useAccounts(ledgerId);
+  const { data: accounts } = accountsQuery;
 
   const [detail, setDetail] = useState<DetailRequest | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
@@ -60,6 +63,7 @@ export function ReportsView() {
     setDetailOpen(true);
   };
 
+  throwIfFailed(ledgerQuery, accountsQuery);
   if (!ledgerId || !accounts) {
     return (
       <div className="grid gap-4">

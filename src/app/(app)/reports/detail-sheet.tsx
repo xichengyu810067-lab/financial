@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { ArrowLeftRight, Flag } from "lucide-react";
 import { cn } from "cn";
 import { AccountIcon } from "@/components/account-icon";
+import { LoadError } from "@/components/load-error";
 import { useEntrySheet } from "@/components/entry/entry-sheet-provider";
 import { ReceiptList } from "@/components/journal/receipt-card";
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -29,12 +30,13 @@ interface DetailSheetProps {
  */
 export function DetailSheet({ request, open, onClose, ledgerId, accounts }: DetailSheetProps) {
   const { openEdit, isOpen: editing } = useEntrySheet();
-  const { data: entries, isPending, error } = useEntriesInRange(
+  const entriesQuery = useEntriesInRange(
     ledgerId,
     request?.period.from ?? "",
     request?.period.to ?? "",
     open && request !== null,
   );
+  const { data: entries, isPending, error } = entriesQuery;
   const accountsById = useMemo(() => new Map(accounts.map((a) => [a.id, a])), [accounts]);
 
   const matched = request && entries ? entries.filter(request.match) : [];
@@ -62,9 +64,7 @@ export function DetailSheet({ request, open, onClose, ledgerId, accounts }: Deta
 
         <div className="flex-1 px-6 pt-3 pb-4">
           {error ? (
-            <p role="alert" className="rounded-xl border border-dashed border-expense/60 px-4 py-6 text-center text-sm text-expense">
-              明細載入失敗：{error.message}
-            </p>
+            <LoadError title="明細載入失敗" error={error} retrying={entriesQuery.isFetching} onRetry={() => void entriesQuery.refetch()} />
           ) : isPending ? (
             <Skeleton className="h-64 w-full" />
           ) : matched.length === 0 ? (

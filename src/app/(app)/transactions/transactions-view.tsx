@@ -9,6 +9,7 @@ import { useEntrySheet } from "@/components/entry/entry-sheet-provider";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { throwIfFailed } from "@/lib/ledger/db";
 import { currentMonth, isValidMonth, monthLabel, useDeleteEntries, useEntries, type Entry } from "@/lib/ledger/entries";
 import { translateDbError } from "@/lib/ledger/errors";
 import { useAccounts, useLedger } from "@/lib/ledger/queries";
@@ -24,10 +25,13 @@ export function TransactionsView() {
   const monthParam = searchParams.get("month");
   const month = isValidMonth(monthParam) ? monthParam : currentMonth();
 
-  const { data: ledger } = useLedger();
+  const ledgerQuery = useLedger();
+  const { data: ledger } = ledgerQuery;
   const ledgerId = ledger?.id;
-  const { data: accounts } = useAccounts(ledgerId);
-  const { data: entries, isPending } = useEntries(ledgerId, month);
+  const accountsQuery = useAccounts(ledgerId);
+  const { data: accounts } = accountsQuery;
+  const entriesQuery = useEntries(ledgerId, month);
+  const { data: entries, isPending } = entriesQuery;
   const { openNew, openEdit, openCopy } = useEntrySheet();
   const remove = useDeleteEntries();
 
@@ -39,6 +43,7 @@ export function TransactionsView() {
 
   const setMonth = (m: string) => router.replace(`/transactions?month=${m}`);
 
+  throwIfFailed(ledgerQuery, accountsQuery, entriesQuery);
   if (!ledgerId || !accounts || isPending || !entries) {
     return (
       <div className="grid gap-4">

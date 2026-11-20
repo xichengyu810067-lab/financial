@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { evaluateSpendingAlerts, monthContext } from "@/lib/ledger/alerts";
 import { baselineRows, splitWatchRows, type WatchRow } from "@/lib/ledger/chart-model";
 import { useCategoryStats } from "@/lib/ledger/days";
+import { throwIfFailed } from "@/lib/ledger/db";
 import { currentMonth, monthLabel, monthRange, shiftMonth } from "@/lib/ledger/entries";
 import { todayISO } from "@/lib/ledger/format";
 import { useAccounts, useLedger } from "@/lib/ledger/queries";
@@ -35,9 +36,11 @@ export function MonthView({ month: monthParam }: MonthViewProps) {
   const { start: monthStart, end: monthEnd } = monthRange(month);
   const asOf = isCurrent ? today : monthEnd;
 
-  const { data: ledger } = useLedger();
+  const ledgerQuery = useLedger();
+  const { data: ledger } = ledgerQuery;
   const ledgerId = ledger?.id;
-  const { data: accounts } = useAccounts(ledgerId);
+  const accountsQuery = useAccounts(ledgerId);
+  const { data: accounts } = accountsQuery;
   const statementQuery = useIncomeStatement(ledgerId, monthStart, monthEnd);
   const statsQuery = useCategoryStats(ledgerId, asOf);
 
@@ -55,6 +58,7 @@ export function MonthView({ month: monthParam }: MonthViewProps) {
     );
   }
 
+  throwIfFailed(ledgerQuery, accountsQuery, statementQuery, statsQuery);
   if (!ledger || !accounts || !statementQuery.data || !statsQuery.data) {
     return (
       <div className="grid gap-5">

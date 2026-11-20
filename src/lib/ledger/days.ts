@@ -3,16 +3,12 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import type { CategoryStat } from "./alerts";
-import { queryKeys } from "./queries";
+import { unwrapRows } from "./db";
+import { keys } from "./keys";
 
 /**
  * 一天一頁用的查詢。鍵都掛在 ["reports", ledgerId] 底下，任何寫入後一併重算。
  */
-
-export const dayKeys = {
-  daily: (ledgerId: string, from: string, to: string) => [...queryKeys.reports(ledgerId), "daily", from, to] as const,
-  stats: (ledgerId: string, asOf: string) => [...queryKeys.reports(ledgerId), "category-stats", asOf] as const,
-};
 
 export interface DailySummaryRow {
   /** YYYY-MM-DD */
@@ -22,15 +18,10 @@ export interface DailySummaryRow {
   entryCount: number;
 }
 
-function unwrapRows<T>(result: { data: T[] | null; error: { message: string } | null }): T[] {
-  if (result.error) throw new Error(result.error.message);
-  return result.data ?? [];
-}
-
 /** 期間內每一天的收入、支出與筆數（沒交易的日子不會有列） */
 export function useDailySummary(ledgerId: string | undefined, from: string, to: string, enabled = true) {
   return useQuery({
-    queryKey: dayKeys.daily(ledgerId ?? "", from, to),
+    queryKey: keys.reports.daily(ledgerId ?? "", from, to),
     enabled: Boolean(ledgerId) && enabled,
     placeholderData: keepPreviousData,
     queryFn: async (): Promise<DailySummaryRow[]> => {
@@ -44,7 +35,7 @@ export function useDailySummary(ledgerId: string | undefined, from: string, to: 
 /** 截至某天的費用類別統計（花過頭判斷用） */
 export function useCategoryStats(ledgerId: string | undefined, asOf: string) {
   return useQuery({
-    queryKey: dayKeys.stats(ledgerId ?? "", asOf),
+    queryKey: keys.reports.categoryStats(ledgerId ?? "", asOf),
     enabled: Boolean(ledgerId),
     placeholderData: keepPreviousData,
     queryFn: async (): Promise<CategoryStat[]> => {

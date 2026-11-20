@@ -11,6 +11,7 @@ import { InvoiceScanner } from "@/components/inbox/invoice-scanner";
 import { PageHeader } from "@/components/page-header";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { throwIfFailed } from "@/lib/ledger/db";
 import { translateDbError } from "@/lib/ledger/errors";
 import { formatTWD } from "@/lib/ledger/format";
 import type { InboxItem } from "@/lib/ledger/inbox-model";
@@ -25,8 +26,10 @@ type Mode = "single" | "batch";
  * 兩種都會先放進待確認匣（取消確認面板也不會遺失），同一張發票不會重複。
  */
 export function ScanView() {
-  const { data: ledger } = useLedger();
-  const { data: accounts } = useAccounts(ledger?.id);
+  const ledgerQuery = useLedger();
+  const { data: ledger } = ledgerQuery;
+  const accountsQuery = useAccounts(ledger?.id);
+  const { data: accounts } = accountsQuery;
   const add = useAddScannedInvoice();
   const [mode, setMode] = useState<Mode>("single");
   const [confirming, setConfirming] = useState<InboxItem | null>(null);
@@ -50,6 +53,7 @@ export function ScanView() {
     [add, ledgerId, mode],
   );
 
+  throwIfFailed(ledgerQuery, accountsQuery);
   if (!ledger || !accounts) {
     return (
       <div className="grid gap-4">

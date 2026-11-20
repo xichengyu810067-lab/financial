@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSignOut } from "@/lib/auth/use-sign-out";
 import { ACCENTS, COVER_COLORS, COVER_MATERIALS, coverColorOf, coverMaterialOf } from "@/lib/brand";
+import { throwIfFailed } from "@/lib/ledger/db";
 import { translateDbError } from "@/lib/ledger/errors";
 import { useLedger, useProfile, useUpdateLedger, useUpdateProfile } from "@/lib/ledger/queries";
 import type { Ledger, Profile } from "@/lib/ledger/types";
@@ -23,9 +24,12 @@ import { CarrierCard } from "./carrier-card";
 import { CategoryRulesCard } from "./category-rules-card";
 
 export function SettingsView() {
-  const { data: ledger } = useLedger();
-  const { data: profile } = useProfile();
+  const ledgerQuery = useLedger();
+  const { data: ledger } = ledgerQuery;
+  const profileQuery = useProfile();
+  const { data: profile } = profileQuery;
 
+  throwIfFailed(ledgerQuery, profileQuery);
   if (!ledger || !profile) {
     return (
       <div className="grid gap-4">
