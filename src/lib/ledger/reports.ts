@@ -2,8 +2,9 @@
 
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
+import { fetchAllRows, unwrapRows, withNumericAmount } from "./db";
 import type { Entry } from "./entries";
-import { queryKeys } from "./queries";
+import { keys } from "./keys";
 import type { Activity, BalanceRow, CashFlowRow, IncomeRow } from "./report-model";
 
 /**
@@ -12,22 +13,9 @@ import type { Activity, BalanceRow, CashFlowRow, IncomeRow } from "./report-mode
  * 切換期間時先顯示上一個期間的資料（keepPreviousData），避免整頁閃骨架。
  */
 
-export const reportKeys = {
-  income: (ledgerId: string, from: string, to: string) => [...queryKeys.reports(ledgerId), "income", from, to] as const,
-  balance: (ledgerId: string, asOf: string) => [...queryKeys.reports(ledgerId), "balance", asOf] as const,
-  cashflow: (ledgerId: string, from: string, to: string) => [...queryKeys.reports(ledgerId), "cashflow", from, to] as const,
-  monthly: (ledgerId: string, from: string, to: string) => [...queryKeys.reports(ledgerId), "monthly", from, to] as const,
-  entries: (ledgerId: string, from: string, to: string) => [...queryKeys.reports(ledgerId), "entries", from, to] as const,
-};
-
-function unwrapRows<T>(result: { data: T[] | null; error: { message: string } | null }): T[] {
-  if (result.error) throw new Error(result.error.message);
-  return result.data ?? [];
-}
-
 export function useIncomeStatement(ledgerId: string | undefined, from: string, to: string) {
   return useQuery({
-    queryKey: reportKeys.income(ledgerId ?? "", from, to),
+    queryKey: keys.reports.income(ledgerId ?? "", from, to),
     enabled: Boolean(ledgerId),
     placeholderData: keepPreviousData,
     queryFn: async (): Promise<IncomeRow[]> => {
@@ -40,7 +28,7 @@ export function useIncomeStatement(ledgerId: string | undefined, from: string, t
 
 export function useBalanceSheet(ledgerId: string | undefined, asOf: string) {
   return useQuery({
-    queryKey: reportKeys.balance(ledgerId ?? "", asOf),
+    queryKey: keys.reports.balance(ledgerId ?? "", asOf),
     enabled: Boolean(ledgerId),
     placeholderData: keepPreviousData,
     queryFn: async (): Promise<BalanceRow[]> => {
@@ -53,7 +41,7 @@ export function useBalanceSheet(ledgerId: string | undefined, asOf: string) {
 
 export function useCashFlow(ledgerId: string | undefined, from: string, to: string) {
   return useQuery({
-    queryKey: reportKeys.cashflow(ledgerId ?? "", from, to),
+    queryKey: keys.reports.cashflow(ledgerId ?? "", from, to),
     enabled: Boolean(ledgerId),
     placeholderData: keepPreviousData,
     queryFn: async (): Promise<CashFlowRow[]> => {
@@ -79,7 +67,7 @@ export interface MonthlySummaryRow {
 
 export function useMonthlySummary(ledgerId: string | undefined, from: string, to: string, enabled = true) {
   return useQuery({
-    queryKey: reportKeys.monthly(ledgerId ?? "", from, to),
+    queryKey: keys.reports.monthly(ledgerId ?? "", from, to),
     enabled: Boolean(ledgerId) && enabled,
     placeholderData: keepPreviousData,
     queryFn: async (): Promise<MonthlySummaryRow[]> => {
@@ -90,24 +78,29 @@ export function useMonthlySummary(ledgerId: string | undefined, from: string, to
   });
 }
 
-/** 期間內所有交易（含期初餘額），供三張報表的明細面板在前端依科目篩選 */
+/**
+ * 期間內所有交易（含期初餘額），供三張報表的明細面板在前端依科目篩選、一天一頁列出當天交易。
+ * 超過 1000 筆分頁抓完，明細與合計才不會被 PostgREST 的列數上限悄悄截斷。
+ */
 export function useEntriesInRange(ledgerId: string | undefined, from: string, to: string, enabled = true) {
   return useQuery({
-    queryKey: reportKeys.entries(ledgerId ?? "", from, to),
+    queryKey: keys.entries.range(ledgerId ?? "", from, to),
     enabled: Boolean(ledgerId) && enabled,
     queryFn: async (): Promise<Entry[]> => {
       const supabase = createClient();
-      const rows = unwrapRows(
-        await supabase
+      const rows = await fetchAllRows((start, end) =>
+        supabase
           .from("entries")
           .select("*")
           .eq("ledger_id", ledgerId!)
           .gte("entry_date", from)
           .lte("entry_date", to)
           .order("entry_date", { ascending: false })
-          .order("created_at", { ascending: false }),
+          .order("created_at", { ascending: false })
+          .order("id")
+          .range(start, end),
       );
-      return rows.map((r) => ({ ...r, amount: Number(r.amount) }));
+      return rows.map(withNumericAmount);
     },
   });
 }

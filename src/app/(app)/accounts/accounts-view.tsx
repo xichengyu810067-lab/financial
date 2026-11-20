@@ -19,6 +19,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
+import { throwIfFailed } from "@/lib/ledger/db";
 import { translateDbError } from "@/lib/ledger/errors";
 import { formatTWD } from "@/lib/ledger/format";
 import {
@@ -36,11 +37,15 @@ import { AccountDialog } from "./account-dialog";
 type DialogState = { open: false } | { open: true; account?: Account; type: "asset" | "liability" };
 
 export function AccountsView() {
-  const { data: ledger } = useLedger();
+  const ledgerQuery = useLedger();
+  const { data: ledger } = ledgerQuery;
   const ledgerId = ledger?.id;
-  const { data: accounts, isPending } = useAccounts(ledgerId);
-  const { data: balances } = useBalances(ledgerId);
-  const { data: openings } = useOpeningBalances(ledgerId);
+  const accountsQuery = useAccounts(ledgerId);
+  const { data: accounts, isPending } = accountsQuery;
+  const balancesQuery = useBalances(ledgerId);
+  const { data: balances } = balancesQuery;
+  const openingsQuery = useOpeningBalances(ledgerId);
+  const { data: openings } = openingsQuery;
   const move = useMoveAccount();
   const setArchived = useSetArchived();
   const remove = useDeleteAccount();
@@ -49,6 +54,7 @@ export function AccountsView() {
   const [deleting, setDeleting] = useState<Account | null>(null);
   const [showArchived, setShowArchived] = useState(false);
 
+  throwIfFailed(ledgerQuery, accountsQuery, balancesQuery, openingsQuery);
   if (!ledger || !ledgerId || isPending || !accounts) {
     return (
       <div className="grid gap-4">

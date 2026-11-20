@@ -4,16 +4,14 @@ import { useEffect, useMemo, useRef } from "react";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { goalStatus, goalsToMarkAchieved, type Goal, type GoalProgressRow, type GoalStatus } from "./goal-model";
-import { queryKeys } from "./queries";
+import { unwrap, unwrapOne, unwrapRows } from "./db";
+import { invalidateAfter } from "./invalidate";
+import { keys } from "./keys";
 
 /**
  * 儲蓄目標的查詢與寫入。鍵掛在 ["reports", ledgerId] 底下：記帳（轉帳進綁定帳戶）後進度跟著重算，
  * 目標或存入寫入後也 invalidate 同一個前綴。
  */
-
-export const goalKeys = {
-  statuses: (ledgerId: string, asOf: string) => [...queryKeys.reports(ledgerId), "goals", asOf] as const,
-};
 
 interface GoalsData {
   goals: Goal[];
@@ -23,7 +21,7 @@ interface GoalsData {
 /** 全部目標（含封存）與截至某天的進度 */
 export function useGoalStatuses(ledgerId: string | undefined, asOf: string) {
   const query = useQuery({
-    queryKey: goalKeys.statuses(ledgerId ?? "", asOf),
+    queryKey: keys.reports.goals(ledgerId ?? "", asOf),
     enabled: Boolean(ledgerId),
     placeholderData: keepPreviousData,
     queryFn: async (): Promise<GoalsData> => {
@@ -32,11 +30,9 @@ export function useGoalStatuses(ledgerId: string | undefined, asOf: string) {
         supabase.from("goals").select("*").eq("ledger_id", ledgerId!).order("sort_order").order("created_at"),
         supabase.rpc("goal_progress", { p_ledger: ledgerId!, p_as_of: asOf }),
       ]);
-      if (goals.error) throw new Error(goals.error.message);
-      if (progress.error) throw new Error(progress.error.message);
       return {
-        goals: (goals.data ?? []).map((g) => ({ ...g, target_amount: Number(g.target_amount) })),
-        progress: (progress.data ?? []).map((r) => ({ goalId: r.goal_id, saved: Number(r.saved), saved90d: Number(r.saved_90d) })),
+        goals: unwrapRows(goals).map((g) => ({ ...g, target_amount: Number(g.target_amount) })),
+        progress: unwrapRows(progress).map((r) => ({ goalId: r.goal_id, saved: Number(r.saved), saved90d: Number(r.saved_90d) })),
       };
     },
   });
@@ -74,7 +70,7 @@ function useMarkAchieved(ledgerId: string | undefined, statuses: GoalStatus[] | 
           ids.forEach((id) => sent.current.delete(id));
           return;
         }
-        void queryClient.invalidateQueries({ queryKey: queryKeys.reports(ledgerId) });
+        void invalidateAfter(queryClient, "goal", ledgerId);
       });
   }, [ledgerId, statuses, asOf, queryClient]);
 }
@@ -107,22 +103,19 @@ export function useSaveGoal() {
         note: input.note?.trim() || null,
       };
       if (input.id) {
-        const { error } = await supabase
-          .from("goals")
-          .update(input.resetAchieved ? { ...row, achieved_at: null } : row)
-          .eq("id", input.id);
-        if (error) throw new Error(error.message);
+        unwrap(await supabase.from("goals").update(input.resetAchieved ? { ...row, achieved_at: null } : row).eq("id", input.id));
         return input.id;
       }
-      const { data, error } = await supabase
-        .from("goals")
-        .insert({ ...row, ledger_id: input.ledgerId, sort_order: input.sortOrder ?? 0 })
-        .select("id")
-        .single();
-      if (error) throw new Error(error.message);
-      return data.id;
+      const created = unwrapOne(
+        await supabase
+          .from("goals")
+          .insert({ ...row, ledger_id: input.ledgerId, sort_order: input.sortOrder ?? 0 })
+          .select("id")
+          .single(),
+      );
+      return created.id;
     },
-    onSuccess: (_id, input) => queryClient.invalidateQueries({ queryKey: queryKeys.reports(input.ledgerId) }),
+    onSuccess: (_id, input) => invalidateAfter(queryClient, "goal", input.ledgerId),
   });
 }
 
@@ -131,16 +124,17 @@ export function useAddDeposit() {
   return useMutation({
     mutationFn: async (input: { ledgerId: string; goalId: string; amount: number; date: string; note: string | null }) => {
       const supabase = createClient();
-      const { error } = await supabase.from("goal_deposits").insert({
-        ledger_id: input.ledgerId,
-        goal_id: input.goalId,
-        amount: input.amount,
-        deposit_date: input.date,
-        note: input.note?.trim() || null,
-      });
-      if (error) throw new Error(error.message);
+      unwrap(
+        await supabase.from("goal_deposits").insert({
+          ledger_id: input.ledgerId,
+          goal_id: input.goalId,
+          amount: input.amount,
+          deposit_date: input.date,
+          note: input.note?.trim() || null,
+        }),
+      );
     },
-    onSuccess: (_r, input) => queryClient.invalidateQueries({ queryKey: queryKeys.reports(input.ledgerId) }),
+    onSuccess: (_r, input) => invalidateAfter(queryClient, "goal", input.ledgerId),
   });
 }
 
@@ -149,9 +143,8 @@ export function useArchiveGoal() {
   return useMutation({
     mutationFn: async (input: { ledgerId: string; goalId: string; archived: boolean }) => {
       const supabase = createClient();
-      const { error } = await supabase.from("goals").update({ is_archived: input.archived }).eq("id", input.goalId);
-      if (error) throw new Error(error.message);
+      unwrap(await supabase.from("goals").update({ is_archived: input.archived }).eq("id", input.goalId));
     },
-    onSuccess: (_r, input) => queryClient.invalidateQueries({ queryKey: queryKeys.reports(input.ledgerId) }),
+    onSuccess: (_r, input) => invalidateAfter(queryClient, "goal", input.ledgerId),
   });
 }

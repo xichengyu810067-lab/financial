@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { Check, ChevronDown, ChevronRight, TriangleAlert } from "lucide-react";
 import { cn } from "cn";
 import { AccountIcon } from "@/components/account-icon";
+import { LoadError } from "@/components/load-error";
 import { Stamp } from "@/components/journal/stamp";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -297,11 +298,16 @@ export function ReportSkeleton() {
   );
 }
 
-export function ReportError({ message }: { message: string }) {
+/** 報表查詢失敗：顯示原因與重試（重抓這張報表失敗的查詢，不必重新整理整頁） */
+export function ReportError({ queries, title = "報表載入失敗" }: { queries: { error: Error | null; isFetching: boolean; refetch: () => unknown }[]; title?: string }) {
+  const failed = queries.filter((q) => q.error);
   return (
-    <p role="alert" className="rounded-xl border border-dashed border-expense/60 bg-expense/5 px-4 py-6 text-center text-sm text-expense">
-      報表載入失敗：{message}
-    </p>
+    <LoadError
+      title={title}
+      error={failed[0]?.error}
+      retrying={failed.some((q) => q.isFetching)}
+      onRetry={() => failed.forEach((q) => void q.refetch())}
+    />
   );
 }
 

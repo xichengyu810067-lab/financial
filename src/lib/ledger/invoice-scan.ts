@@ -3,7 +3,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import type { Json } from "@/lib/supabase/database.types";
-import { inboxKeys } from "./inbox";
+import { invalidateAfter } from "./invalidate";
 import type { InboxItem } from "./inbox-model";
 import type { ParsedInvoice } from "./invoice-qr";
 
@@ -69,6 +69,6 @@ export function useAddScannedInvoice() {
       }
       return { ...data, amount: Number(data.amount) };
     },
-    onSuccess: (_item, { ledgerId }) => queryClient.invalidateQueries({ queryKey: inboxKeys.pending(ledgerId) }),
+    onSuccess: (_item, { ledgerId }) => invalidateAfter(queryClient, "inboxItem", ledgerId),
   });
 }

@@ -5,7 +5,9 @@ import { createClient } from "@/lib/supabase/client";
 import type { Json, Tables } from "@/lib/supabase/database.types";
 import { isValidMonth, monthRange } from "./month";
 import { buildLines, type AccountRef, type Line } from "./posting";
-import { queryKeys } from "./queries";
+import { fetchAllRows, unwrap, withNumericAmount } from "./db";
+import { invalidateAfter } from "./invalidate";
+import { keys } from "./keys";
 import type { Account } from "./types";
 
 export type Entry = Tables<"entries">;
@@ -27,26 +29,16 @@ export { currentMonth, dayLabel, isValidMonth, monthLabel, monthRange, shiftMont
 // 查詢
 // ---------------------------------------------------------------------------
 
-export const entryKeys = {
-  all: (ledgerId: string) => ["entries", ledgerId] as const,
-  month: (ledgerId: string, month: string) => ["entries", ledgerId, month] as const,
-};
-
-function unwrap<T>(result: { data: T; error: { message: string } | null }): T {
-  if (result.error) throw new Error(result.error.message);
-  return result.data;
-}
-
-/** 某月份的交易（不含期初餘額），日期與建立時間都降冪 */
+/** 某月份的交易（不含期初餘額），日期與建立時間都降冪；超過 1000 筆分頁抓完 */
 export function useEntries(ledgerId: string | undefined, month: string) {
   return useQuery({
-    queryKey: entryKeys.month(ledgerId ?? "", month),
+    queryKey: keys.entries.month(ledgerId ?? "", month),
     enabled: Boolean(ledgerId) && isValidMonth(month),
     queryFn: async (): Promise<Entry[]> => {
       const supabase = createClient();
       const { start, end } = monthRange(month);
-      const rows = unwrap(
-        await supabase
+      const rows = await fetchAllRows((from, to) =>
+        supabase
           .from("entries")
           .select("*")
           .eq("ledger_id", ledgerId!)
@@ -54,9 +46,11 @@ export function useEntries(ledgerId: string | undefined, month: string) {
           .gte("entry_date", start)
           .lte("entry_date", end)
           .order("entry_date", { ascending: false })
-          .order("created_at", { ascending: false }),
+          .order("created_at", { ascending: false })
+          .order("id")
+          .range(from, to),
       );
-      return (rows ?? []).map((r) => ({ ...r, amount: Number(r.amount) }));
+      return rows.map(withNumericAmount);
     },
   });
 }
@@ -112,15 +106,6 @@ export function linesForEntry(input: Omit<SaveEntryInput, "id" | "ledgerId" | "d
   }
 }
 
-export async function invalidateAfterWrite(queryClient: ReturnType<typeof useQueryClient>, ledgerId: string) {
-  await Promise.all([
-    queryClient.invalidateQueries({ queryKey: entryKeys.all(ledgerId) }),
-    queryClient.invalidateQueries({ queryKey: queryKeys.balances(ledgerId) }),
-    queryClient.invalidateQueries({ queryKey: queryKeys.openings(ledgerId) }),
-    queryClient.invalidateQueries({ queryKey: queryKeys.reports(ledgerId) }),
-  ]);
-}
-
 export function useSaveEntry() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -147,7 +132,7 @@ export function useSaveEntry() {
       if (!id) throw new Error("儲存失敗，請再試一次");
       return id;
     },
-    onSuccess: (_id, input) => invalidateAfterWrite(queryClient, input.ledgerId),
+    onSuccess: (_id, input) => invalidateAfter(queryClient, "entry", input.ledgerId),
   });
 }
 
@@ -159,6 +144,6 @@ export function useDeleteEntries() {
       const supabase = createClient();
       unwrap(await supabase.from("entries").delete().in("id", input.ids));
     },
-    onSuccess: (_r, input) => invalidateAfterWrite(queryClient, input.ledgerId),
+    onSuccess: (_r, input) => invalidateAfter(queryClient, "entry", input.ledgerId),
   });
 }

@@ -44,7 +44,7 @@ const COLUMNS: ReportColumn[] = [
 
 export function CashFlow({ ledgerId, accounts, period, onDrill }: CashFlowProps) {
   const query = useCashFlow(ledgerId, period.from, period.to);
-  if (query.error) return <ReportError message={query.error.message} />;
+  if (query.error) return <ReportError queries={[query]} />;
   if (!query.data) return <ReportSkeleton />;
 
   const statement = buildCashFlow(query.data);

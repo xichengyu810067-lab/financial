@@ -13,6 +13,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
+import { throwIfFailed } from "@/lib/ledger/db";
 import { dayLabel } from "@/lib/ledger/entries";
 import { translateDbError } from "@/lib/ledger/errors";
 import { formatTWD } from "@/lib/ledger/format";
@@ -23,10 +24,13 @@ import type { Account } from "@/lib/ledger/types";
 
 /** 待確認匣：固定支出到期、掃描或匯入的發票先放這裡，確認後才入帳 */
 export function InboxView() {
-  const { data: ledger } = useLedger();
+  const ledgerQuery = useLedger();
+  const { data: ledger } = ledgerQuery;
   const ledgerId = ledger?.id;
-  const { data: accounts } = useAccounts(ledgerId);
-  const { data: items } = usePendingInbox(ledgerId);
+  const accountsQuery = useAccounts(ledgerId);
+  const { data: accounts } = accountsQuery;
+  const itemsQuery = usePendingInbox(ledgerId);
+  const { data: items } = itemsQuery;
   useRecurringSync(ledgerId);
 
   const confirm = useConfirmInbox();
@@ -45,6 +49,7 @@ export function InboxView() {
   const readyItems = (items ?? []).filter(isReady);
   const chosen = readyItems.filter((i) => selected.has(i.id));
 
+  throwIfFailed(ledgerQuery, accountsQuery, itemsQuery);
   if (!ledger || !accounts || !items) {
     return (
       <div className="grid gap-4">

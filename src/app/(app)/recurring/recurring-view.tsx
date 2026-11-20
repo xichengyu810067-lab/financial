@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { throwIfFailed } from "@/lib/ledger/db";
 import { translateDbError } from "@/lib/ledger/errors";
 import { formatTWD, todayISO } from "@/lib/ledger/format";
 import { useDeleteRecurringRule, useRecurringRules, useSaveRecurringRule, type RecurringRule } from "@/lib/ledger/inbox";
@@ -22,9 +23,12 @@ const KIND_LABELS = { expense: "支出", income: "收入", transfer: "轉帳" } 
 
 /** 固定支出（也可以是固定收入、固定轉帳）：到期時放進待確認匣 */
 export function RecurringView() {
-  const { data: ledger } = useLedger();
-  const { data: accounts } = useAccounts(ledger?.id);
-  const { data: rules } = useRecurringRules(ledger?.id);
+  const ledgerQuery = useLedger();
+  const { data: ledger } = ledgerQuery;
+  const accountsQuery = useAccounts(ledger?.id);
+  const { data: accounts } = accountsQuery;
+  const rulesQuery = useRecurringRules(ledger?.id);
+  const { data: rules } = rulesQuery;
   const save = useSaveRecurringRule();
   const remove = useDeleteRecurringRule();
   const [editing, setEditing] = useState<RecurringRule | undefined>();
@@ -35,6 +39,7 @@ export function RecurringView() {
     return (id: string | null) => (id ? (map.get(id) ?? "（已刪除）") : "?");
   }, [accounts]);
 
+  throwIfFailed(ledgerQuery, accountsQuery, rulesQuery);
   if (!ledger || !accounts || !rules) {
     return (
       <div className="grid gap-4">

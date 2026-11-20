@@ -46,8 +46,7 @@ export function BalanceSheet({ ledgerId, accounts, period, onDrill }: BalanceShe
   const trendFrom = shiftPeriod(monthPeriod(Number(endMonth.slice(0, 4)), Number(endMonth.slice(5, 7))), -11).from;
   const trendQuery = useNetWorthByMonth(ledgerId, trendFrom, period.to);
 
-  const error = endQuery.error ?? startQuery.error;
-  if (error) return <ReportError message={error.message} />;
+  if (endQuery.error || startQuery.error) return <ReportError queries={[endQuery, startQuery]} />;
   if (!endQuery.data || !startQuery.data) return <ReportSkeleton />;
 
   const sheet = buildBalanceSheet(endQuery.data, startQuery.data);
@@ -153,7 +152,7 @@ export function BalanceSheet({ ledgerId, accounts, period, onDrill }: BalanceShe
       {!isEmpty && (
         <ChartFigure title="淨值一路走來" description={`每個月底的資產減負債，截至 ${shortDate(period.to)} 往前 12 個月。`}>
           {trendQuery.error ? (
-            <ReportError message={trendQuery.error.message} />
+            <ReportError title="走勢圖載入失敗" queries={[trendQuery]} />
           ) : trendQuery.data ? (
             <NetWorthArea points={netWorthSeries(trendQuery.data, endMonth)} />
           ) : (

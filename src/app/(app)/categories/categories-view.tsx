@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { throwIfFailed } from "@/lib/ledger/db";
 import { translateDbError } from "@/lib/ledger/errors";
 import { formatTWD } from "@/lib/ledger/format";
 import { useAccounts, useBalances, useDeleteAccount, useLedger, useMoveAccount, useSetArchived } from "@/lib/ledger/queries";
@@ -41,10 +42,13 @@ type DialogState =
   | { open: true; type: CategoryType; category?: Account; parentId: string | null };
 
 export function CategoriesView() {
-  const { data: ledger } = useLedger();
+  const ledgerQuery = useLedger();
+  const { data: ledger } = ledgerQuery;
   const ledgerId = ledger?.id;
-  const { data: accounts, isPending } = useAccounts(ledgerId);
-  const { data: balances } = useBalances(ledgerId);
+  const accountsQuery = useAccounts(ledgerId);
+  const { data: accounts, isPending } = accountsQuery;
+  const balancesQuery = useBalances(ledgerId);
+  const { data: balances } = balancesQuery;
   const move = useMoveAccount();
   const setArchived = useSetArchived();
   const remove = useDeleteAccount();
@@ -54,6 +58,7 @@ export function CategoriesView() {
   const [deleting, setDeleting] = useState<Account | null>(null);
   const [showArchived, setShowArchived] = useState(false);
 
+  throwIfFailed(ledgerQuery, accountsQuery, balancesQuery);
   if (!ledgerId || isPending || !accounts) {
     return (
       <div className="grid gap-4">

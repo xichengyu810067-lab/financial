@@ -98,3 +98,36 @@ Migration `20261120090000_milestone_8_db_limits.sql`。套用前在正式資料�
   - 套用前再查一次正式資料，沒有任何一列違反新的長度、格式或系統科目限制。
   - 三個 SQL 測試在正式資料庫以回滾方式跑過，都 `ALL_OK`（rls 150、restore 12、inbox 28），沒有留下測試使用者。
   - Security advisors 只剩原本就有的「Leaked password protection 未開啟」，這屬於 Auth 後台設定，跟上面待確認的後台設定一起處理。
+
+### PR C 資料層與錯誤處理（2026-11-20 實作）
+
+- **集中管理**：
+  - `src/lib/ledger/keys.ts`：全部查詢鍵。交易列表、報表明細都放在 `["entries", 帳本]` 底下；報表、圖表、一天一頁的統計、目標進度放在 `["reports", 帳本]`；待確認匣、固定支出、分類規則放在 `["inbox", 帳本]`。
+  - `src/lib/ledger/db.ts`：`unwrap`／`unwrapOne`／`unwrapRows`、分頁抓取 `fetchAllRows`、`withNumericAmount`、`throwIfFailed`。取代原本散在 5 個檔案的 unwrap／check。
+  - `src/lib/ledger/invalidate.ts`：寫入後要刷新哪些查詢，整理成一張對照表 `affectedKeys`。所有帳本相關的 mutation 都改走 `invalidateAfter`，並有單元測試。
+- **修掉的 bug**：
+  - 報表明細（`useEntriesInRange`）、交易列表（`useEntries`）、待確認匣分頁抓完，排序最後加 `id`。期間超過 1000 筆時，明細與合計不會再被 PostgREST 悄悄截斷。
+  - 刪除或修改科目後，待確認匣、固定支出、分類規則也會刷新。外鍵會連帶刪掉固定支出與分類規則、清空待確認項目上的帳戶，以前畫面要等 30 秒或重新整理才更新。
+  - 還原備份後，允許當天再產生到期的固定支出。還原會清掉待確認匣，以前要隔天才補回來。
+  - 改帳本起始日後，交易列表也會刷新（期初交易的日期會跟著改）。
+- **錯誤畫面**：
+  - `app/(app)/error.tsx`：筆記本內頁出錯時，頂部分頁與記帳按鈕都還在，只有這一頁換成錯誤與重試。
+  - `app/error.tsx`：封面、登入、引導等頁面。
+  - `app/global-error.tsx`：根版面本身出錯。
+  - 共用的 `components/load-error.tsx`：顯示 `translateDbError` 轉過的訊息，不直接顯示英文資料庫錯誤；伺服器錯誤附上 digest。
+  - 各頁的主要資料在載入骨架前呼叫 `throwIfFailed(...)`：自動重試後仍失敗、也沒有舊資料時交給 `error.tsx`，不會再一直停在骨架。用在今天、本月、交易、待確認、固定支出、帳戶、類別、報表、掃描、設定、封面。餘額與期初也算在內，失敗時不會把金額顯示成 0。
+  - 報表、明細面板、目標卡片照舊在原地顯示錯誤，加上「重試」按鈕，只重抓失敗的查詢。
+- **重試**：
+  - TanStack Query 改成重試 2 次（約 3 秒）。
+  - 瀏覽器端 Supabase client 關掉 postgrest-js 內建的重試（`db: { retry: false }`）。它會對 GET 斷線自己再送 3 次，兩層疊起來要等二十幾秒才看得到錯誤畫面。
+- **伺服器錯誤記錄**：
+  - `src/instrumentation.ts` 的 `onRequestError` 把錯誤寫成一行 JSON（`level: "error"`、digest、訊息、前 8 行 stack、方法、路徑、路由）到 Vercel 日誌。畫面上的錯誤代碼就是 digest。
+  - 不記 query string（登入回呼的 `code`、`next`）、標頭與請求內容。
+  - 決定事項 3 先採用 Vercel 日誌，不接 Sentry。瀏覽器端的查詢錯誤不會進日誌，只出現在使用者的主控台與錯誤畫面。
+- **測試**：
+  - 單元測試新增 `db.test.ts`（2345 筆分頁抓取的合計、剛好 1000 筆、出錯）與 `invalidate.test.ts`（每種寫入刷新的範圍、不動別本帳本）。
+  - E2E 新增 `08-load-errors.spec.ts`，只攔截瀏覽器請求、不寫資料庫：
+    - 帳戶頁的餘額查詢斷線時出現錯誤與重試，頂部分頁還在，恢復後重試就載入。
+    - 損益表斷線時就地顯示錯誤，重試後恢復。
+    - 明細查詢帶 `limit=1000&offset=0`，排序最後是 `id`。
+- **驗證**：lint、tsc、單元測試 205 項、build 都通過；E2E 全套 18 項本機通過（含新增的 3 項）。
