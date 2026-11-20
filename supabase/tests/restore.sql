@@ -43,6 +43,8 @@ create function pg_temp.ledger_signature(p_ledger uuid) returns text language sq
        where cr.ledger_id = p_ledger
   ) s;
 $f$;
+-- 里程碑 8 起，新函式預設不再開放給 PUBLIC，測試輔助函式要明確授權
+grant execute on function pg_temp.ledger_signature(uuid) to authenticated;
 
 do $$
 declare
