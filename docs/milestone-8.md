@@ -69,7 +69,7 @@
 - **`shadcn` 移到 devDependencies**（只有 CLI 與 `globals.css` 的 `@import`，建置時才用到）。重裝時順帶升到 4.23.0，不再相依 express／hono；`npm audit --omit=dev` 從 6 條變 0 條。lockfile 裡 23 個各平台的 `@unrs/resolver-binding-*` 都還在（里程碑 6 踩過的坑）。
 - **驗證**：lint、tsc、單元測試 192 項、build 都通過；E2E 全套 15 項本機通過（新增「安全標頭」一項，登出情境加上重導向檢查；掃發票情境確認 zxing 在 CSP 下正常），跑完測試帳號回到原樣。正式建置在本機開 `/today`、`/reports`、`/scan`，主控台沒有 CSP 違規，資料正常從 Supabase 載入。
 
-### PR B 資料庫寫入上限與權限收斂（2026-11-20 實作）
+### PR B 資料庫寫入上限與權限收斂（2026-11-20 實作、已合併 #21）
 
 Migration `20261120090000_milestone_8_db_limits.sql`。套用前在正式資料庫唯讀查過：2 位使用者、15 筆交易、資料庫 12 MB，所有欄位都遠低於新上限。
 
