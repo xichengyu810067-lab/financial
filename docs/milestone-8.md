@@ -53,7 +53,7 @@
 
 ## 實作備註
 
-### PR A 應用程式資安（2026-11-20 實作）
+### PR A 應用程式資安（2026-11-20 實作、已合併 #20）
 
 - **開放式重導向**：新增 `src/lib/auth/safe-next.ts` 的 `sanitizeNext`（純函式）：拒絕反斜線與控制字元、用 URL 解析後確認來源不變、限長 2048。登入、Google 登入與 `/auth/callback` 都改用它；原本的 `safeNext` 移除。17 項單元測試（`/\evil.com`、`/\t/evil.com`、`//`、`javascript:`、百分比編碼等）；E2E 用 `/login?next=%2F%5Cevil.example` 登入，確認回到 `/cover`。
 - **安全標頭**（`next.config.ts` 的 `headers()`，全站）：CSP、`X-Frame-Options: DENY`、`nosniff`、`Referrer-Policy: strict-origin-when-cross-origin`、`Permissions-Policy`（相機只給自己）、`Cross-Origin-Opener-Policy: same-origin`、正式環境加 HSTS；關掉 `X-Powered-By`。
