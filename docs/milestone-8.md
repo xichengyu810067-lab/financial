@@ -99,7 +99,7 @@ Migration `20261120090000_milestone_8_db_limits.sql`。套用前在正式資料�
   - 三個 SQL 測試在正式資料庫以回滾方式跑過，都 `ALL_OK`（rls 150、restore 12、inbox 28），沒有留下測試使用者。
   - Security advisors 只剩原本就有的「Leaked password protection 未開啟」，這屬於 Auth 後台設定，跟上面待確認的後台設定一起處理。
 
-### PR C 資料層與錯誤處理（2026-11-20 實作）
+### PR C 資料層與錯誤處理（2026-11-20 實作、已合併 #22）
 
 - **集中管理**：
   - `src/lib/ledger/keys.ts`：全部查詢鍵。交易列表、報表明細都放在 `["entries", 帳本]` 底下；報表、圖表、一天一頁的統計、目標進度放在 `["reports", 帳本]`；待確認匣、固定支出、分類規則放在 `["inbox", 帳本]`。
