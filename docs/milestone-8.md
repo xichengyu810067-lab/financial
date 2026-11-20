@@ -68,3 +68,29 @@
 - **CI**：兩個 workflow 都加 `permissions: contents: read`；actions 固定到 commit SHA（註解標版本）；Supabase CLI 從 `latest` 改成固定 `3.2.0`。
 - **`shadcn` 移到 devDependencies**（只有 CLI 與 `globals.css` 的 `@import`，建置時才用到）。重裝時順帶升到 4.23.0，不再相依 express／hono；`npm audit --omit=dev` 從 6 條變 0 條。lockfile 裡 23 個各平台的 `@unrs/resolver-binding-*` 都還在（里程碑 6 踩過的坑）。
 - **驗證**：lint、tsc、單元測試 192 項、build 都通過；E2E 全套 15 項本機通過（新增「安全標頭」一項，登出情境加上重導向檢查；掃發票情境確認 zxing 在 CSP 下正常），跑完測試帳號回到原樣。正式建置在本機開 `/today`、`/reports`、`/scan`，主控台沒有 CSP 違規，資料正常從 Supabase 載入。
+
+### PR B 資料庫寫入上限與權限收斂（2026-11-20 實作）
+
+Migration `20261120090000_milestone_8_db_limits.sql`。套用前在正式資料庫唯讀查過：2 位使用者、15 筆交易、資料庫 12 MB，所有欄位都遠低於新上限。
+
+- **權限**：anon 收回所有表、序列、函式的權限（原本有包含 TRUNCATE 在內的全部表權限，還能呼叫 `is_ledger_owner` 與里程碑 7 的 4 個觸發器函式）；authenticated 收回 TRUNCATE／REFERENCES／TRIGGER；觸發器函式一律不給直接呼叫。`alter default privileges` 讓之後新建的表與函式也不會自動開給 anon、函式不再預設開給 PUBLIC（新函式要明確 `grant ... to authenticated`，以前的 migration 本來就這樣寫）。Supabase 內部角色 `supabase_admin` 的預設權限 migration 改不到，靠下面的目錄檢查把關。
+- **帳本與個人資料**：policy 拆成讀取、修改兩條，並收回 INSERT／DELETE。帳本只由註冊 trigger 建立；之後做多帳本再開專用 RPC 並加數量上限。
+- **長度上限**（資料庫比前端寬一點）：名稱 50 字（帳本、科目、目標）、備註 200 字（交易、目標、存入）、顯示名稱與標語 60 字、店名 200 字、發票明細最多 500 項且 64 KB；`entries.invoice_no`、`merchants.seller_ban` 加格式檢查。
+- **筆數上限**（每本帳本，statement 層級 trigger，一次批次只算一次）：交易 10 萬、分錄 30 萬、科目 300、預算 5000、目標 100、存入 1 萬、固定支出 100、分類規則 200、店家記憶 5000、待確認項目 2 萬。以每天 20 筆記 10 年約 7 萬筆估，單一帳本約 100 MB 內。還原備份也受同樣上限。每次新增交易會多一次該帳本的計數（走索引，一般用量在毫秒內）。
+- **系統科目**：自己不能新增、刪除、改 `is_system`／型別／層級（名稱、排序可以改）；每本帳本只能有一個，而且一定是權益科目。`restore_ledger` 重建時放行。
+- **待確認匣**：新項目一定是未處理；確認入帳只能經由 `confirm_inbox_item`；已確認或已略過的項目不能再改（原本可以改回未處理再確認一次，產生重複交易）；來源、發票號碼、固定支出、到期日建立後不能改。前端的「略過」照舊直接更新，不用改前端。
+- **只有 RPC 能做的事**：RPC 用 `set_config(..., true)` 設一個只在這個交易有效的旗標（`app.confirming_inbox`、`app.restoring_ledger`），觸發器看到旗標才放行；PostgREST 只開放 public 的函式，使用者設不了這個旗標。觸發器只管 `authenticated` 角色，註冊建帳本（SECURITY DEFINER）、service_role、刪除使用者時的 cascade 都不受影響。
+- **`entries.created_by`**：新增時一律是寫入者本人，之後改不掉。
+- **`confirm_inbox_item`**：最多拆 50 筆、每筆最多兩位小數（50.005＋49.995 不再通過）。
+- **`net_worth_by_month`**：日期區間最多 10 年、起訖顛倒會報錯（前端只查 12 個月）。其他報表只是依日期篩選，成本跟資料量成正比，不另外限制。
+- **測試**：`rls.sql` 從 62 項增加到 150 項：
+  - 目錄檢查 9 項：public 的表都開 RLS 且有 policy、檢視是 `security_invoker`、函式都固定 `search_path`、anon 沒有任何表或函式權限、觸發器與 SECURITY DEFINER 函式不能直接呼叫、登入者沒有 TRUNCATE、不能直接新增或刪除帳本。之後新表、新函式忘了這些，CI 就會失敗。
+  - with check：自己的資料不能搬到別人的帳本。
+  - 新增的各項限制，每項都有測試。
+  - anon 對 12 張表的新增、修改、刪除都被擋。
+
+  `restore.sql` 的測試輔助函式補上明確授權。
+- **驗證**：本機沒有 Docker，改用 PGlite（WebAssembly 版 Postgres 17）模擬 Supabase 的角色、auth schema 與預設權限：
+  - 三個 SQL 測試都 `ALL_OK`（rls 150、restore 12、inbox 28）。
+  - 拿掉這個 migration 後，新測試會失敗，目錄檢查列出的正好是正式資料庫查到的那 5 個 anon 可呼叫函式。
+  - CI 的 `rls` job 用真的 Supabase 映像再跑一次。
